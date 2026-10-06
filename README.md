@@ -21,6 +21,7 @@ Drop a self-contained HTML file in a folder, push, and it's live on GitHub Pages
 ## Table of contents
 
 - [Why](#why)
+- [Decks](#decks)
 - [How it works](#how-it-works)
 - [Project structure](#project-structure)
 - [Adding a deck](#adding-a-deck)
@@ -38,6 +39,15 @@ Slides are usually trapped in proprietary formats and tools. OpenDecks takes the
 - **No build pipeline for decks.** Whatever tool produced your deck, if the output is a single HTML file, it fits.
 - **No framework, no dependencies.** The only code is a ~70-line Node script that builds the landing page.
 - **Free hosting.** GitHub Pages serves everything.
+
+## Decks
+
+| Deck | Topic |
+| --- | --- |
+| [lean tech — the manifesto](https://saumon.github.io/opendecks/decks/lean-tech.html) | Book club notes on *The Lean Tech Manifesto*: why Agile doesn't scale and what Lean brings (customer value, team networks, right-first-time, just-in-time, learning organization). In French. |
+| [tmux — the comeback](https://saumon.github.io/opendecks/decks/tmux-the-comeback.html) | Why tmux matters again for remote, agent-driven development. |
+
+The [live site](https://saumon.github.io/opendecks/) always lists the current decks.
 
 ## How it works
 
@@ -63,6 +73,7 @@ Because the index is rebuilt on each deploy, it can never drift out of sync with
 ```text
 .
 ├── decks/                  # one self-contained .html file per deck
+│   ├── lean-tech.html
 │   └── tmux-the-comeback.html
 ├── scripts/
 │   └── build-index.mjs     # generates index.html (Node, no dependencies)

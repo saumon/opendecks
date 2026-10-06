@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src data: https://fonts.gstatic.com; img-src data:; connect-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lean tech — the manifesto</title>
+<meta name="description" content="Book club : The Lean Tech Manifesto — pourquoi l'agile ne scale pas, et ce que le lean change.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400..800;1,400..800&amp;display=swap">
+<style>
+:root{
+  --bg:#0e1116; --bg2:#11161d; --bg3:#0a1a12;
+  --fg:#d8dee4; --green:#3ddc84; --amber:#f5a524; --red:#f85149; --muted:#7d8590; --line:#30363d;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{background:#000;color-scheme:dark}
+body{margin:0;background:#000}
+
+/* ---------- canvas 1920×1080 ---------- */
+.slide{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--mono);
+  display:flex;flex-direction:column;gap:32px;padding:120px 128px 150px}
+.slide.alt{background:var(--bg2)}
+.slide.hot{background:var(--bg3)}
+.slide.split{justify-content:space-between;gap:48px}
+
+.prompt{font-size:32px;line-height:1.4;color:var(--green)}
+.prompt::after{content:"▌";margin-left:6px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.h1{font-size:180px;font-weight:800;line-height:1.05;letter-spacing:-4px;margin:0}
+.h2{font-size:96px;font-weight:800;line-height:1.1;letter-spacing:-2px;margin:0}
+.sub{font-size:48px;font-weight:700;line-height:1.4;color:var(--amber);margin:0}
+.muted{color:var(--muted)}
+.g{color:var(--green)} .a{color:var(--amber)} .r{color:var(--red)}
+.b{font-weight:800}
+pre,.pre{font-family:var(--mono);margin:0;white-space:pre}
+
+.row{display:flex;gap:48px;flex:1;min-height:0;padding-top:16px}
+.row.tight{gap:32px}
+.col{display:flex;flex-direction:column;gap:32px;flex:1;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:32px;flex:1;min-height:0;padding-top:16px}
+
+.card{background:var(--bg);border:3px solid var(--green);border-radius:12px;padding:40px;display:flex;flex-direction:column;gap:16px;flex:1;min-width:0}
+.hot .card,.alt .card{background:var(--bg)}
+.card.dim{border-color:var(--line)}
+.card.warn{border-color:var(--amber)}
+.label{font-size:28px;line-height:1.2;color:var(--green)}
+.card.warn .label{color:var(--amber)}
+.t{font-size:34px;line-height:1.4}
+.ts{font-size:30px;line-height:1.4}
+.big{font-size:60px;font-weight:800;line-height:1.1}
+.huge{font-size:120px;font-weight:800;line-height:1;letter-spacing:-3px}
+.quote{font-size:52px;font-weight:700;line-height:1.25}
+.foot{font-size:32px;line-height:1.4;color:var(--muted)}
+ul.l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+ul.l li{font-size:34px;line-height:1.35;padding-left:52px;position:relative}
+ul.l li::before{content:"›";position:absolute;left:12px;color:var(--green);font-weight:800}
+ul.l.s li{font-size:30px}
+
+/* tmux-like status bar */
+.status{position:absolute;left:0;right:0;bottom:0;height:64px;display:flex;align-items:center;gap:28px;padding:0 40px;
+  background:var(--green);color:#0e1116;font-size:26px;font-weight:700}
+.status .w{opacity:.65;font-weight:500}
+.status .w.on{opacity:1;font-weight:800}
+.status .sp{flex:1}
+
+/* ---------- runtime (stage) ---------- */
+.deck{position:fixed;inset:0;overflow:hidden}
+.frame{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform:translate(-50%,-50%) scale(var(--s,1));transform-origin:50% 50%}
+.frame .slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .32s cubic-bezier(.33,.01,.2,1),visibility 0s .32s}
+.frame .slide.on{opacity:1;visibility:visible;transition:opacity .32s cubic-bezier(.33,.01,.2,1)}
+
+/* portrait / phone : slides empilées, scroll vertical */
+html.scroll{overflow:auto}
+html.scroll .deck{position:static;overflow:visible}
+html.scroll .frame{position:static;transform:none;width:auto;height:auto}
+html.scroll .frame .slide{position:relative;opacity:1;visibility:visible;transform:scale(var(--s,1));transform-origin:0 0;margin-bottom:calc(1080px * (var(--s,1) - 1) + 8px)}
+
+@media (prefers-reduced-motion:reduce){.frame .slide,.frame .slide.on{transition:none}.prompt::after{animation:none}}
+@page{size:1920px 1080px;margin:0}
+@media print{
+  html,body{background:none}
+  .deck{position:static}
+  .frame{position:static;transform:none}
+  .frame .slide{position:relative;opacity:1;visibility:visible;break-after:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .prompt::after{display:none}
+}
+</style>
+</head>
+<body>
+<main class="deck"><div class="frame" id="frame">
+
+<!-- 1 · titre -->
+<section class="slide split" data-win="0">
+  <div class="prompt">~ $ cat lean-tech-manifesto.md</div>
+  <h1 class="h1">Agile<br>doesn't scale.</h1>
+  <div>
+    <p class="sub">Lean does. ──▶ The Lean Tech Manifesto</p>
+    <div class="foot"># book club · notes de lecture · F. Bernhard &amp; B. Anyacho</div>
+  </div>
+</section>
+
+<!-- 2 · TL;DR -->
+<section class="slide alt" data-win="0">
+  <div class="prompt">~/book $ head README.md</div>
+  <h2 class="h2">TL;DR.</h2>
+  <div class="row">
+    <div class="card warn" style="flex:1.1;justify-content:space-between">
+      <div class="label"># la morale du livre</div>
+      <div class="quote">“Human decision-making and teamwork are just as important as technology.”</div>
+      <div class="ts muted">Scaler l'agile = l'ancrer dans une organisation apprenante, qui progresse en résolvant ses problèmes.</div>
+    </div>
+    <div class="card">
+      <div class="label">$ tree -d lean-tech/</div>
+<pre class="t">lean-tech/
+├── <span class="muted">01_</span>scaling-agile-culture
+├── <span class="muted">02_</span>value-for-the-customer
+├── <span class="muted">03_</span>network-of-teams
+├── <span class="muted">04_</span>right-first-time
+├── <span class="muted">05_</span>just-in-time
+└── <span class="muted">06_</span>learning-organization</pre>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · REX des auteurs -->
+<section class="slide" data-win="0">
+  <div class="prompt">~/book $ git log --oneline authors/</div>
+  <h2 class="h2">Le REX des auteurs.</h2>
+  <div class="row">
+    <div class="card dim" style="flex:1.25">
+      <div class="label"># ce qui a coincé</div>
+<pre class="ts"><span class="a">e3f1a07</span> produit itératif     <span class="g">✓</span> traction
+<span class="a">9c2b4d1</span> rewrite framework    <span class="g">✓</span> 12 ans tranquille
+<span class="a">51de0aa</span> marché trop petit    <span class="r">✗</span> pas de recul
+<span class="a">7b88c3e</span> cycle en V + agile   <span class="r">✗</span> le pire des deux</pre>
+      <div class="label" style="margin-top:20px"># puis, le virage lean</div>
+      <ul class="l s">
+        <li>Incréments <span class="g">&lt; 1 jour</span> + <span class="g">burndown</span> chaque matin</li>
+        <li>Une <span class="g">rétro à chaque retard</span></li>
+        <li>Les leaders <span class="g">coachent</span>, ne résolvent pas</li>
+      </ul>
+    </div>
+    <div class="col" style="flex:.75;gap:24px">
+      <div class="card" style="justify-content:center;gap:4px;padding:20px 40px"><div class="big g" style="font-size:72px">+20%</div><div class="ts">satisfaction client, 2 ans</div></div>
+      <div class="card" style="justify-content:center;gap:4px;padding:20px 40px"><div class="big a" style="font-size:72px">×10</div><div class="ts">chiffre d'affaires, 4 ans</div></div>
+      <div class="card" style="justify-content:center;gap:4px;padding:20px 40px"><div class="big" style="font-size:72px">12→84</div><div class="ts">recrutements par an</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · l'agile ne scale pas -->
+<section class="slide alt" data-win="0">
+  <div class="prompt">~/agile $ git log --reverse --format='%ad %s'</div>
+  <h2 class="h2">Le manifeste a ses limites.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.1">
+      <div class="label">$ git log</div>
+<pre class="t"><span class="a">1995</span>  Scrum — Sutherland &amp; Schwaber
+<span class="a">2001</span>  Agile Manifesto
+      <span class="muted"># pensé pour de petites équipes</span>
+<span class="a">2011</span>  SAFe® — «&nbsp;l'agile à l'échelle&nbsp;»
+      <span class="muted"># …vraiment&nbsp;?</span></pre>
+      <div class="ts muted" style="margin-top:auto"># waterfall&nbsp;: produit décrit 3× — specs, code, tests
+# client embarqué&nbsp;: top… sauf face à N stakeholders</div>
+    </div>
+    <div class="col" style="gap:24px">
+      <div class="card warn" style="padding:28px 36px;gap:10px">
+        <div class="label"># response to change, à grande échelle</div>
+        <div class="ts">Soit <span class="a b">intelligente mais locale</span>, soit <span class="a b">globale mais floue</span>.</div>
+      </div>
+      <div class="card dim" style="padding:28px 36px;gap:10px">
+        <div class="label"># livrer souvent ≠ coordonner</div>
+        <div class="ts">Dépendances croisées entre équipes&nbsp;: le flux ralentit.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · SAFe -->
+<section class="slide" data-win="0">
+  <div class="prompt">~/agile $ grep -i safe reviews.log</div>
+  <h2 class="h2">SAFe&nbsp;? <span class="r">unSAFe.</span></h2>
+  <div class="grid2" style="grid-template-rows:1fr 1fr">
+    <div class="card dim"><div class="t">“isn't really Agile in its heart.”</div><div class="label muted">— Ron Jeffries</div></div>
+    <div class="card dim"><div class="t">“unSAFe and suffocating.”</div><div class="label muted">— Ken Schwaber</div></div>
+    <div class="card dim"><div class="t">“violates the values of the Agile manifesto.”</div><div class="label muted">— Mike Beedle</div></div>
+    <div class="card warn"><div class="t a b">“Shitty Agile for Enterprises.”</div><div class="label muted">— Martin Fowler</div></div>
+  </div>
+  <div class="t"><span class="r">✗</span> rituels &amp; bureaucratie &nbsp; <span class="r">✗</span> équipes peu autonomes &nbsp; <span class="r">✗</span> ingés loin du client</div>
+</section>
+
+<!-- 6 · 4 valeurs -->
+<section class="slide hot" data-win="0">
+  <div class="prompt">~ $ git diff agile.md lean-tech.md</div>
+  <h2 class="h2">4 valeurs.</h2>
+  <div class="card" style="justify-content:center;gap:10px">
+<pre class="t" style="font-size:31px;line-height:1.3"><span class="r">- customer collaboration over contract negotiation</span>
+<span class="g b">+ VALUE FOR THE CUSTOMER</span>
+
+<span class="r">- individuals and interactions over processes and tools</span>
+<span class="g b">+ A TECH-ENABLED NETWORK OF TEAMS</span>
+
+<span class="r">- working software over comprehensive documentation</span>
+<span class="g b">+ RIGHT-FIRST-TIME &amp; JUST-IN-TIME</span>
+
+<span class="r">- responding to change over following a plan</span>
+<span class="g b">+ BUILDING A LEARNING ORGANIZATION</span></pre>
+  </div>
+</section>
+
+<!-- 7 · Gemba -->
+<section class="slide" data-win="1">
+  <div class="prompt">~/value $ ssh gemba</div>
+  <h2 class="h2">Va voir le terrain.</h2>
+  <p class="sub">Gemba walk ──▶ au moins 1×/semaine</p>
+  <div class="row">
+    <div class="card">
+      <div class="label">[0] gemba</div>
+      <div class="big">Écouter.</div>
+      <div class="ts">Laisser l'équipe décrire son problème. Ne pas répondre tout de suite.</div>
+    </div>
+    <div class="card">
+      <div class="label">[1] value model</div>
+      <div class="big">+ / −&nbsp;?</div>
+      <div class="ts">Ce que le client veut en plus, en moins. Les retours <span class="a">négatifs</span> d'abord.</div>
+    </div>
+    <div class="card warn">
+      <div class="label">[2] andon · big red button</div>
+      <div class="big">Stop.</div>
+      <div class="ts">Le support Amazon peut bloquer la vente d'un produit jusqu'à résolution.</div>
+    </div>
+  </div>
+  <div class="foot"># “If you're digging your grave, don't dig faster.” — productivité ≠ valeur</div>
+</section>
+
+<!-- 8 · mesurer la valeur -->
+<section class="slide alt" data-win="1">
+  <div class="prompt">~/value $ cat value.yml</div>
+  <h2 class="h2">La valeur, ça se mesure.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.5;justify-content:center">
+<pre class="ts"><span class="g">value</span>:
+  <span class="a">satisfaction</span>: NPS             <span class="muted"># clients + internes</span>
+  <span class="a">pricing</span>:      payer tôt       <span class="muted"># feedback ++</span>
+  <span class="a">security</span>:     shift-left      <span class="muted"># + pen-tests</span>
+  <span class="a">performance</span>:
+    - Lighthouse                 <span class="muted"># web</span>
+    - Flashlight                 <span class="muted"># mobile</span>
+    - APM                        <span class="muted"># prod</span>
+  <span class="a">cost</span>:         dashboard infra <span class="muted"># cf. Spotify</span></pre>
+    </div>
+    <div class="col">
+      <div class="card warn"><div class="label"># client payant</div><div class="ts">Attentes ↑ ⇒ feedback pertinent ⇒ product-market fit plus vite.</div></div>
+      <div class="card dim"><div class="label"># sécurité</div><div class="ts">Les failles se détectent <span class="g">dès le dev</span>, pas en prod.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · équipes -->
+<section class="slide" data-win="2">
+  <div class="prompt">~/teams $ docker ps --format '{{.Size}}'</div>
+  <h2 class="h2">Petites. Stables. Cross-stack.</h2>
+  <div class="row">
+    <div class="card"><div class="label"># two-pizza team</div><div class="huge g">&lt; 10</div><div class="ts">personnes. Plus gros&nbsp;? Au manager le plus talentueux.</div></div>
+    <div class="card"><div class="label"># stabilité</div><div class="huge a">1,5 an</div><div class="ts">de montée en perf. Ne pas la démanteler.</div></div>
+    <div class="card"><div class="label"># squad</div><div class="big" style="font-size:44px;line-height:1.2">front · back<br>produit · design<br>infra</div><div class="ts">ensemble, qui s'entraident.</div></div>
+  </div>
+  <div class="foot"># Obeya&nbsp;: le management visuel est une compétence clé du leadership</div>
+</section>
+
+<!-- 10 · résolution de problèmes -->
+<section class="slide alt" data-win="2">
+  <div class="prompt">~/teams $ ./solve --method=pdca</div>
+  <h2 class="h2">Résoudre, pas subir.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.1">
+      <div class="label"># Deming</div>
+<pre class="t">  ┌──▶ <span class="g b">P</span>lan ──┐
+  │           ▼
+ <span class="g b">A</span>ct         <span class="g b">D</span>o
+  ▲           │
+  └── <span class="g b">C</span>heck ◀─┘</pre>
+      <div class="label" style="margin-top:12px"># P, en détail&nbsp;: PISCAR</div>
+      <div class="ts"><span class="a">P</span>roblem · <span class="a">I</span>mpact · <span class="a">S</span>tandard · <span class="a">C</span>auses · <span class="a">A</span>ction · <span class="a">R</span>esult</div>
+    </div>
+    <div class="card dim">
+      <div class="label"># le rôle du leader</div>
+      <ul class="l s">
+        <li><span class="g">Coacher</span> l'auto-résolution, pas jouer au pompier</li>
+        <li>Manage by caring ⇒ confiance ⇒ coopération</li>
+        <li>N'intervenir que pour <span class="g">arbitrer</span></li>
+        <li>Former <span class="g">vite</span>, dès que le gap apparaît</li>
+      </ul>
+      <div class="label" style="margin-top:auto"># problem-solving dojo hebdo</div>
+      <div class="ts">Une équipe présente son dernier PDCA. Tout le monde challenge.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · 5S -->
+<section class="slide" data-win="2">
+  <div class="prompt">~/teams $ 5s --apply ./codebase</div>
+  <h2 class="h2">5S pour le code.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.3">
+<pre class="t"><span class="g">1 sort</span>         supprimer l'inutilisé
+<span class="g">2 set in order</span> trier, nommer le reste
+<span class="g">3 shine</span>        remettre à neuf
+               <span class="muted"># le désordre cache les bugs</span>
+<span class="g">4 standardize</span>  un système pour tenir
+<span class="g">5 sustain</span>      sponsorisé par le leadership</pre>
+      <div class="ts muted" style="margin-top:auto"># porté par l'équipe, soutenu par le team leader</div>
+    </div>
+    <div class="col" style="gap:24px">
+      <div class="card warn" style="gap:8px"><div class="label"># read&nbsp;: write</div><div class="huge a" style="font-size:96px">10:1</div><div class="ts">On lit bien plus qu'on n'écrit.</div></div>
+      <div class="card"><div class="label"># boy scout rule</div><div class="ts">“Always leave the code base healthier than when you found it.”</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 · réseau d'équipes -->
+<section class="slide alt" data-win="2">
+  <div class="prompt">~/teams $ curl -s localhost/api/teams</div>
+  <h2 class="h2">Scaler la collaboration.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label">[0] linux</div>
+      <div class="big">git &lt;3</div>
+      <div class="ts">Né du besoin de faire collaborer des milliers de contributeurs. La leçon&nbsp;: responsabiliser les équipes + les bons outils.</div>
+    </div>
+    <div class="card warn">
+      <div class="label">[1] amazon</div>
+      <div class="big">APIs partout.</div>
+      <div class="ts">Petites équipes, faiblement couplées&nbsp;: moins de coordination, plus de build. <span class="a">4 Md$ (2002) → 500 Md$ (2022)</span>.</div>
+    </div>
+    <div class="card">
+      <div class="label">[2] kamishibai</div>
+      <div class="big">Check régulier.</div>
+      <div class="ts">Reconstruire l'env de dev from scratch. Remonter la prod depuis les backups. Vérifier l'IaC… et la visio des salles.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 · jidoka -->
+<section class="slide hot" data-win="3">
+  <div class="prompt">~/quality $ jidoka --stop-on-defect</div>
+  <h2 class="h2">Right first time.</h2>
+  <p class="sub">Détecter le défaut au plus tôt. S'arrêter. Corriger.</p>
+  <div style="display:flex;gap:20px;align-items:stretch">
+    <div class="card" style="padding:28px"><div class="huge g" style="font-size:80px">A</div><div class="ts">avant le push<br><span class="muted">dev · TDD</span></div></div>
+    <div class="card" style="padding:28px"><div class="huge g" style="font-size:80px">B</div><div class="ts">avant client interne<br><span class="muted">review · CI</span></div></div>
+    <div class="card dim" style="padding:28px"><div class="huge" style="font-size:80px">C</div><div class="ts">avant la prod<br><span class="muted">recette</span></div></div>
+    <div class="card warn" style="padding:28px"><div class="huge a" style="font-size:80px">D</div><div class="ts">en prod, avant plainte<br><span class="muted">canary · monitoring</span></div></div>
+    <div class="card warn" style="padding:28px;border-color:var(--red)"><div class="huge r" style="font-size:80px">E</div><div class="ts">plainte client<br><span class="muted">trop tard</span></div></div>
+  </div>
+  <div class="t"><span class="g b">◀── shift-left</span> &nbsp;Compter les défauts A ⇒ l'équipe adopte le TDD d'elle-même.</div>
+  <div class="foot"># une équipe QA en bout de chaîne&nbsp;: défauts ≈ stables, productivité ↓, délais ↑</div>
+</section>
+
+<!-- 14 · dantotsu + poka-yoke -->
+<section class="slide" data-win="3">
+  <div class="prompt">~/quality $ why; why; why; why; why</div>
+  <h2 class="h2">Apprendre de chaque bug.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.3;gap:12px">
+      <div class="label"># dantotsu&nbsp;: 2 questions par défaut</div>
+      <div class="t"><span class="a b">1.</span> Comment l'aurait-on <span class="g">détecté</span> plus tôt&nbsp;?</div>
+      <div class="ts muted" style="padding-left:48px">test · monitoring · jeu de données · linter</div>
+      <div class="t"><span class="a b">2.</span> Comment l'aurait-on <span class="g">évité</span>&nbsp;?</div>
+      <div class="ts muted" style="padding-left:48px">«&nbsp;pourquoi&nbsp;?&nbsp;» jusqu'à la croyance erronée&nbsp;:</div>
+<pre class="ts" style="padding-left:48px"><span class="muted">skill  </span> lib mal connue
+<span class="muted">naming </span> <span class="a">getAllProducts()</span> → que les dispo
+<span class="muted">domain </span> le compta veut le prix HT</pre>
+    </div>
+    <div class="card warn">
+      <div class="label"># poka-yoke&nbsp;: l'erreur impossible</div>
+      <ul class="l s">
+        <li>Linters activés <span class="a">chez tout le monde</span>, dans tous les IDE</li>
+        <li>Null safety activée</li>
+        <li>Typage strict</li>
+        <li>Environnement pensé pour le TDD</li>
+        <li>Tests auto = détecteur de régressions</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 15 · kanban -->
+<section class="slide alt" data-win="4">
+  <div class="prompt">~/flow $ kanban --show-bottlenecks</div>
+  <h2 class="h2">Just in time.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.35">
+      <div class="label"># kanban = «&nbsp;signboard&nbsp;»</div>
+<pre class="ts">┌ DOING ─┬ <span class="a">WAIT</span> ──┬ REVIEW ┬ <span class="a">WAIT</span> ──┬ DONE ──┐
+│ #42 1d │ #37 <span class="a">4d</span> │ #31 2d │ #28 <span class="r">9d</span> │ #19    │
+│ #44 1d │ #39 <span class="a">3d</span> │        │ #30 <span class="r">7d</span> │        │
+│        │ #40 <span class="a">3d</span> │        │ #33 <span class="r">6d</span> │        │
+└────────┴────────┴────────┴────────┴────────┘
+                             <span class="r">▲ bottleneck</span></pre>
+      <div class="ts">Rendre visibles&nbsp;: <span class="g">stock</span> en attente · <span class="g">lead time</span> par carte · <span class="g">équipe</span> par colonne.</div>
+    </div>
+    <div class="card dim">
+      <div class="label"># règles de flux</div>
+      <ul class="l s">
+        <li><span class="g">WIP = 1</span> tâche/dev en «&nbsp;doing&nbsp;»</li>
+        <li>Tâches <span class="g">&lt; 1 jour</span></li>
+        <li>Burndown à chaque daily = <span class="g">takt time</span></li>
+        <li>Bloqué&nbsp;? Résoudre le problème, pas ouvrir un 2ᵉ ticket</li>
+        <li>Mieux vaut <span class="a">s'arrêter</span> que produire du stock inutile</li>
+      </ul>
+      <div class="t" style="margin-top:auto"><span class="g">lead time ↓</span> ⇒ <span class="g">feedback ↑</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 16 · déployer -->
+<section class="slide" data-win="4">
+  <div class="prompt">~/flow $ time ./deploy.sh --env=prod</div>
+  <h2 class="h2">Déployer en minutes.</h2>
+  <div class="row">
+    <div class="card"><div class="label"># amazon, automatisation</div><div class="huge g">-90%</div><div class="ts">de temps de déploiement, avec plus de tests auto.</div></div>
+    <div class="card warn"><div class="label"># amazon, 2011</div><div class="huge a">11,6 s</div><div class="ts">entre deux mises en prod. ~300 par heure.</div></div>
+    <div class="card dim"><div class="label"># SMED</div><div class="big" style="font-size:44px">single-minute exchange of die</div><div class="ts">Env, déploiement, migration&nbsp;: en minutes.</div></div>
+  </div>
+  <div class="t"><span class="g">trunk-based dev</span> · canary deployment · <span class="r">déploiement pénible = départ des seniors</span></div>
+</section>
+
+<!-- 17 · data > opinions -->
+<section class="slide hot" data-win="5">
+  <div class="prompt">~/learn $ ab-test --variants=41 --color=blue</div>
+  <h2 class="h2">Data &gt; opinions.</h2>
+  <div class="row">
+    <div class="col">
+      <div class="card warn"><div class="label"># google, A/B test</div><div class="big"><span class="a">41</span> nuances de bleu</div><div class="ts">pour les liens d'annonces&nbsp;: <span class="a b">+200 M$/an</span>.</div></div>
+      <div class="card dim"><div class="label"># ford (attribuée)</div><div class="ts">“If I had asked people what they wanted, they would have said faster horses.”</div></div>
+    </div>
+    <div class="col">
+      <div class="card" style="gap:12px"><div class="label"># product discovery</div><div class="ts">Tester <span class="g">pas cher</span>&nbsp;: proto, tableur, no-code. La roadmap vient des expériences&nbsp;; l'équipe décide <span class="g">en autonomie</span>.</div></div>
+      <div class="card" style="gap:12px"><div class="label"># un CEO</div><div class="ts">“My most important job as CEO is to <span class="g">listen for bad news</span>.”</div><div class="ts muted">→ merci à qui remonte un problème.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 18 · capitaliser -->
+<section class="slide" data-win="5">
+  <div class="prompt">~/learn $ man standards</div>
+  <h2 class="h2">Capitaliser.</h2>
+  <div class="row tight">
+    <div class="card">
+      <div class="label"># standards</div>
+      <div class="ts">La meilleure façon de faire, observée <span class="g">dans l'équipe</span>.</div>
+      <div class="ts muted">ex. nommer ses variables · casser une dépendance circulaire · écrire une user story</div>
+      <div class="ts" style="margin-top:auto">Cause racine trouvée ⇒ <span class="a">mettre à jour le standard</span>.</div>
+    </div>
+    <div class="card">
+      <div class="label"># kaizen, 6 étapes</div>
+<pre class="ts"><span class="g">1</span> découvrir le potentiel
+<span class="g">2</span> analyser l'existant
+<span class="g">3</span> idées → en choisir une
+<span class="g">4</span> plan de test
+<span class="g">5</span> implémenter
+<span class="g">6</span> évaluer</pre>
+    </div>
+    <div class="card">
+      <div class="label"># TWI, former</div>
+<pre class="ts"><span class="g">1</span> théorie
+<span class="g">2</span> démonstration
+<span class="g">3</span> pratique
+<span class="g">4</span> feedback</pre>
+      <div class="ts muted" style="margin-top:auto">chaque erreur renvoie au standard</div>
+    </div>
+  </div>
+</section>
+
+<!-- 19 · guildes -->
+<section class="slide alt" data-win="5">
+  <div class="prompt">~/learn $ ./guild --init</div>
+  <h2 class="h2">Guildes &amp; communautés.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.3">
+      <div class="label"># l'algo, en 4 étapes</div>
+<pre class="ts"><span class="g">1</span> choisir un domaine utile et motivant
+  <span class="muted"># sécu, web perf, testing…</span>
+<span class="g">2</span> un leader passionné + early adopters
+<span class="g">3</span> budget, infra, protection
+  <span class="muted"># lever les freins (promo, reward)</span>
+<span class="g">4</span> donner de la visibilité aux succès</pre>
+    </div>
+    <div class="col">
+      <div class="card warn"><div class="label"># anti-pattern</div><div class="ts"><span class="r">plan → build → run</span>&nbsp;: le savoir part avec l'équipe de build.</div></div>
+      <div class="card dim"><div class="label"># feedback en continu</div><div class="ts">Amazon Connections&nbsp;: 1 question/jour à chaque salarié.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 20 · lundi matin -->
+<section class="slide hot" data-win="6">
+  <div class="prompt">~/monday $ cat TODO.md</div>
+  <h2 class="h2">Lundi matin.</h2>
+  <div class="card" style="flex:1;justify-content:center">
+<pre class="t" style="font-size:36px;line-height:1.4"><span class="g">- [ ]</span> burndown affiché à chaque daily
+<span class="g">- [ ]</span> une rétro à chaque retard
+<span class="g">- [ ]</span> tâches &lt; 1 jour, WIP = 1
+<span class="g">- [ ]</span> trunk-based dev
+<span class="g">- [ ]</span> linters + null safety partout
+<span class="g">- [ ]</span> canary deployment
+<span class="g">- [ ]</span> dantotsu sur chaque bug prod
+<span class="g">- [ ]</span> problem-solving dojo hebdo
+<span class="g">- [ ]</span> kamishibai&nbsp;: rebuild from scratch
+<span class="g">- [ ]</span> lancer une guilde</pre>
+  </div>
+</section>
+
+<!-- 21 · fin -->
+<section class="slide split" data-win="6">
+  <div class="prompt">~ $ exit 0</div>
+  <h1 class="h1">Questions&nbsp;?</h1>
+  <div>
+    <p class="sub">next reads ──▶</p>
+    <div class="t">Team Topologies <span class="muted">·</span> Accelerate <span class="muted">·</span> The Lean Startup</div>
+  </div>
+</section>
+
+</div></main>
+
+<script>
+(function () {
+  var W = 1920, H = 1080, wins = ['intro', 'value', 'teams', 'quality', 'flow', 'learn', 'next'];
+  var root = document.documentElement, slides = [].slice.call(document.querySelectorAll('.slide'));
+  var n = slides.length, cur = 0;
+
+  // barre de statut façon tmux
+  slides.forEach(function (s, i) {
+    var w = +s.getAttribute('data-win'), bar = document.createElement('div');
+    bar.className = 'status';
+    bar.setAttribute('aria-hidden', 'true');
+    bar.innerHTML = '<span>[lean]</span>' + wins.map(function (name, k) {
+      return '<span class="w' + (k === w ? ' on' : '') + '">' + k + ':' + name + (k === w ? '*' : '') + '</span>';
+    }).join('') + '<span class="sp"></span><span>' + (i + 1) + '/' + n + '</span>';
+    s.appendChild(bar);
+    s.setAttribute('aria-roledescription', 'slide');
+    s.setAttribute('aria-label', 'Slide ' + (i + 1) + ' sur ' + n);
+  });
+
+  function scrollMode() { return window.matchMedia('(max-aspect-ratio: 1/1)').matches; }
+  function fit() {
+    var sc = scrollMode();
+    root.classList.toggle('scroll', sc);
+    var s = sc ? root.clientWidth / W : Math.min(root.clientWidth / W, root.clientHeight / H);
+    root.style.setProperty('--s', String(s > 0 ? s : 1));
+  }
+  function go(i) {
+    cur = Math.max(0, Math.min(n - 1, i));
+    if (scrollMode()) { slides[cur].scrollIntoView(); }
+    slides.forEach(function (s, k) {
+      var on = k === cur;
+      s.classList.toggle('on', on);
+      if (on) s.removeAttribute('inert'); else s.setAttribute('inert', '');
+    });
+    try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) {}
+  }
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if ((k === ' ' && e.shiftKey) || k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp') { e.preventDefault(); go(cur - 1); }
+    else if (k === ' ' || k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown') { e.preventDefault(); go(cur + 1); }
+    else if (k === 'Home') { e.preventDefault(); go(0); }
+    else if (k === 'End') { e.preventDefault(); go(n - 1); }
+    else if (k === 'f' || k === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (root.requestFullscreen) root.requestFullscreen();
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (e.button !== 0 || scrollMode() || String(document.getSelection() || '') !== '') return;
+    go(cur + (e.clientX < root.clientWidth / 2 ? -1 : 1));
+  });
+  var tx = 0, ty = 0, tt = 0;
+  document.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) { tt = 0; return; }
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY; tt = Date.now();
+  }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (scrollMode() || e.changedTouches.length !== 1) return;
+    var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+    if (Date.now() - tt > 700 || Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    go(cur + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+  var wheelLock = false;
+  window.addEventListener('wheel', function (e) {
+    if (e.ctrlKey || scrollMode() || Math.abs(e.deltaY) < 30) return;
+    e.preventDefault();
+    if (wheelLock) return;
+    wheelLock = true; setTimeout(function () { wheelLock = false; }, 450);
+    go(cur + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: false });
+  window.addEventListener('hashchange', function () {
+    var m = /^#(\d+)$/.exec(location.hash);
+    if (m && +m[1] - 1 !== cur) go(+m[1] - 1);
+  });
+
+  fit();
+  var m = /^#(\d+)$/.exec(location.hash);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>
