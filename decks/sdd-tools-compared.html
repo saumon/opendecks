@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src data: https://fonts.gstatic.com; img-src data:; connect-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spec-driven dev, compared</title>
+<meta name="description" content="BMAD, OpenSpec, GitHub Spec Kit and the rest: workflows, pros and cons, and what each one costs in tokens.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400..800;1,400..800&amp;display=swap">
+<style>
+:root{
+  --bg:#0e1116; --bg2:#11161d; --bg3:#0a1a12;
+  --fg:#d8dee4; --green:#3ddc84; --amber:#f5a524; --red:#f85149; --muted:#7d8590; --line:#30363d;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{background:#000;color-scheme:dark}
+body{margin:0;background:#000}
+
+/* ---------- canvas 1920×1080 ---------- */
+.slide{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--mono);
+  display:flex;flex-direction:column;gap:32px;padding:120px 128px 150px}
+.slide.alt{background:var(--bg2)}
+.slide.hot{background:var(--bg3)}
+.slide.split{justify-content:space-between;gap:48px}
+
+.prompt{font-size:32px;line-height:1.4;color:var(--green)}
+.prompt::after{content:"▌";margin-left:6px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.h1{font-size:180px;font-weight:800;line-height:1.05;letter-spacing:-4px;margin:0}
+.h2{font-size:96px;font-weight:800;line-height:1.1;letter-spacing:-2px;margin:0}
+.sub{font-size:48px;font-weight:700;line-height:1.4;color:var(--amber);margin:0}
+.muted{color:var(--muted)}
+.g{color:var(--green)} .a{color:var(--amber)} .r{color:var(--red)}
+.b{font-weight:800}
+pre,.pre{font-family:var(--mono);margin:0;white-space:pre}
+
+.row{display:flex;gap:48px;flex:1;min-height:0;padding-top:16px}
+.row.tight{gap:32px}
+.col{display:flex;flex-direction:column;gap:32px;flex:1;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:32px;flex:1;min-height:0;padding-top:16px}
+
+.card{background:var(--bg);border:3px solid var(--green);border-radius:12px;padding:40px;display:flex;flex-direction:column;gap:16px;flex:1;min-width:0}
+.hot .card,.alt .card{background:var(--bg)}
+.card.dim{border-color:var(--line)}
+.card.warn{border-color:var(--amber)}
+.label{font-size:28px;line-height:1.2;color:var(--green)}
+.card.warn .label{color:var(--amber)}
+.t{font-size:34px;line-height:1.4}
+.ts{font-size:30px;line-height:1.4}
+.big{font-size:60px;font-weight:800;line-height:1.1}
+.huge{font-size:120px;font-weight:800;line-height:1;letter-spacing:-3px}
+.quote{font-size:52px;font-weight:700;line-height:1.25}
+.foot{font-size:32px;line-height:1.4;color:var(--muted)}
+ul.l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+ul.l li{font-size:34px;line-height:1.35;padding-left:52px;position:relative}
+ul.l li::before{content:"›";position:absolute;left:12px;color:var(--green);font-weight:800}
+ul.l.s li{font-size:30px}
+.bars{display:flex;flex-direction:column;gap:14px}
+.bar{display:grid;grid-template-columns:260px 1fr 150px;align-items:center;gap:24px;font-size:30px;line-height:1.3}
+.bar .track{height:34px}
+.bar .fill{height:100%;background:var(--green)}
+.bar .fill.a{background:var(--amber)} .bar .fill.r{background:var(--red)}
+.bar .v{text-align:right;font-weight:700}
+.bar .note{grid-column:2/4;font-size:26px;color:var(--muted);margin-top:-8px}
+.bars .grp{font-size:26px;color:var(--muted)}
+
+/* tmux-like status bar */
+.status{position:absolute;left:0;right:0;bottom:0;height:64px;display:flex;align-items:center;gap:28px;padding:0 40px;
+  background:var(--green);color:#0e1116;font-size:26px;font-weight:700}
+.status .w{opacity:.65;font-weight:500}
+.status .w.on{opacity:1;font-weight:800}
+.status .sp{flex:1}
+
+/* ---------- runtime (stage) ---------- */
+.deck{position:fixed;inset:0;overflow:hidden}
+.frame{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform:translate(-50%,-50%) scale(var(--s,1));transform-origin:50% 50%}
+.frame .slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .32s cubic-bezier(.33,.01,.2,1),visibility 0s .32s}
+.frame .slide.on{opacity:1;visibility:visible;transition:opacity .32s cubic-bezier(.33,.01,.2,1)}
+
+/* portrait / phone: stacked slides, vertical scroll */
+html.scroll{overflow:auto}
+html.scroll .deck{position:static;overflow:visible}
+html.scroll .frame{position:static;transform:none;width:auto;height:auto}
+html.scroll .frame .slide{position:relative;opacity:1;visibility:visible;transform:scale(var(--s,1));transform-origin:0 0;margin-bottom:calc(1080px * (var(--s,1) - 1) + 8px)}
+
+@media (prefers-reduced-motion:reduce){.frame .slide,.frame .slide.on{transition:none}.prompt::after{animation:none}}
+@page{size:1920px 1080px;margin:0}
+@media print{
+  html,body{background:none}
+  .deck{position:static}
+  .frame{position:static;transform:none}
+  .frame .slide{position:relative;opacity:1;visibility:visible;break-after:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .prompt::after{display:none}
+}
+</style>
+<body>
+<main class="deck"><div class="frame" id="frame">
+
+<!-- 1 · title -->
+<section class="slide split" data-win="0">
+  <div class="prompt">~ $ ls ~/.claude/skills | grep -iE 'spec|bmad|opsx'</div>
+  <h1 class="h1">Spec-driven<br>dev, compared.</h1>
+  <div>
+    <p class="sub">BMAD · OpenSpec · Spec Kit ──▶ and the rest</p>
+    <div class="foot"># workflows · pros &amp; cons · token cost · snapshot of October 2026</div>
+  </div>
+</section>
+
+<!-- 2 · TL;DR -->
+<section class="slide alt" data-win="0">
+  <div class="prompt">~ $ cat TLDR.md</div>
+  <h2 class="h2">TL;DR.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label">[0] github spec kit</div>
+      <div class="big">The standard.</div>
+      <div class="ts">Constitution → spec → plan → tasks → code. Most stars, most ceremony per feature.</div>
+    </div>
+    <div class="card">
+      <div class="label">[1] openspec</div>
+      <div class="big">The light one.</div>
+      <div class="ts">Delta specs on top of a living spec. Built for existing code. Cheapest in tokens.</div>
+    </div>
+    <div class="card warn">
+      <div class="label">[2] bmad method</div>
+      <div class="big">The team.</div>
+      <div class="ts">An agile team of AI personas, from brief to retro. Most complete, most expensive.</div>
+    </div>
+  </div>
+  <div class="foot"># all three: free, MIT, markdown + slash commands, 40+ coding agents</div>
+</section>
+
+<!-- 3 · what is SDD -->
+<section class="slide" data-win="0">
+  <div class="prompt">~ $ man sdd</div>
+  <h2 class="h2">Spec first, code second.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.2">
+      <div class="label"># the idea</div>
+      <div class="ts">Write down <span class="g">what</span> and <span class="g">why</span> before the agent writes <span class="a">how</span>. The spec, not the chat history, is the source of truth for the human and the AI.</div>
+      <div class="ts muted" style="margin-top:auto"># the cure for "vibe coding" and context rot</div>
+    </div>
+    <div class="card" style="flex:1.3">
+      <div class="label"># three levels of ambition (B. Böckeler, Thoughtworks)</div>
+<pre class="ts" style="font-size:29px"><span class="g">spec-first</span>      spec drives the work,
+                then is forgotten
+<span class="g">spec-anchored</span>   spec lives on and evolves
+                with the feature
+<span class="a">spec-as-source</span>  humans edit only the spec,
+                code is generated</pre>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · landscape -->
+<section class="slide alt" data-win="1">
+  <div class="prompt">~ $ curl -s api.github.com/repos/… | jq '.stargazers_count'</div>
+  <h2 class="h2">The landscape.</h2>
+  <div class="card" style="justify-content:center;padding:32px 48px">
+<pre class="ts" style="font-size:28px;line-height:1.5"><span class="muted">tool              stars   latest      license       since</span>
+<span class="g b">Spec Kit</span>          140k    v1.1.1      MIT           Aug 2025
+<span class="g b">OpenSpec</span>           71k    v1.14.1     MIT           Aug 2025
+GSD                64k    v1.42.3     MIT           Dec 2025
+<span class="g b">BMAD Method</span>        54k    v6.12.1     MIT <span class="muted">+ ™</span>       Apr 2025
+Task Master        28k    0.43.1      <span class="a">MIT+Commons</span>   Mar 2025
+<span class="muted">Superpowers       296k    v6.4.2      MIT   # skills, SDD-adjacent</span>
+Kiro               <span class="muted">—</span>      AWS IDE     <span class="a">proprietary</span>   Jul 2025
+Tessl              <span class="muted">—</span>      registry    <span class="a">proprietary</span>   Sep 2025</pre>
+  </div>
+  <div class="foot"># GitHub API, 2026-10-07. Stars measure hype, not fitness.</div>
+</section>
+
+<!-- 5 · spec kit flow -->
+<section class="slide" data-win="1">
+  <div class="prompt">~/app $ specify init --here --integration claude</div>
+  <h2 class="h2">Spec Kit: the pipeline.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.3;justify-content:center">
+<pre class="ts" style="font-size:30px;line-height:1.45"><span class="g">/speckit-constitution</span>  project principles, once
+        │
+<span class="g">/speckit-specify</span>       spec.md <span class="muted">+ a git branch</span>
+        │  <span class="muted">/speckit-clarify</span>
+<span class="g">/speckit-plan</span>          plan.md, research, contracts
+        │  <span class="muted">/speckit-checklist</span>
+<span class="g">/speckit-tasks</span>         tasks.md
+        │  <span class="muted">/speckit-analyze</span>
+<span class="g">/speckit-implement</span>     code</pre>
+    </div>
+    <div class="col" style="flex:.7">
+      <div class="card"><div class="label"># one folder per feature</div><div class="ts"><span class="g">specs/001-…/</span> with the spec, plan and tasks, on its own branch.</div></div>
+      <div class="card dim"><div class="label"># v1.x, 2026</div><div class="ts">Presets, extensions, workflows.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · spec kit verdict -->
+<section class="slide alt" data-win="1">
+  <div class="prompt">~/app $ ./review spec-kit --honest</div>
+  <h2 class="h2">Spec Kit: pros and cons.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label"># pros</div>
+      <ul class="l s">
+        <li>Backed by GitHub, the largest community</li>
+        <li>Agent-agnostic: Copilot, Claude, Gemini, Codex…</li>
+        <li><span class="g">Constitution</span>: rules every feature inherits</li>
+        <li>Strong at greenfield, rich templates</li>
+        <li>Extensible: presets and extensions</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <div class="label"># cons</div>
+      <ul class="l s">
+        <li><span class="a">Verbose</span>: thousands of markdown lines to review</li>
+        <li>Heavy for a bug fix or a small change</li>
+        <li>Specs are per change: <span class="a">spec-first</span>, they drift</li>
+        <li>About <span class="a">2× the tokens</span> of OpenSpec (slide 15)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · openspec flow -->
+<section class="slide" data-win="1">
+  <div class="prompt">~/app $ openspec init --tools claude</div>
+  <h2 class="h2">OpenSpec: deltas.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.2">
+      <div class="label"># two folders</div>
+<pre class="ts" style="font-size:29px">openspec/
+├── <span class="g">specs/</span>       <span class="muted"># the truth, today</span>
+└── <span class="a">changes/</span>     <span class="muted"># proposals</span>
+    └── add-2fa/
+        ├── proposal.md
+        ├── design.md
+        ├── tasks.md
+        └── specs/   <span class="muted"># ADDED / MODIFIED</span>
+                     <span class="muted"># REMOVED / RENAMED</span></pre>
+    </div>
+    <div class="col" style="flex:.8">
+      <div class="card"><div class="label"># the loop</div>
+<pre class="ts"><span class="g">/opsx:propose</span>  → change
+<span class="g">/opsx:apply</span>    → code
+<span class="g">/opsx:archive</span>  → merge
+               into specs/</pre></div>
+      <div class="card dim"><div class="label"># spec-anchored</div><div class="ts">Archived deltas keep <span class="g">specs/</span> current.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · openspec verdict -->
+<section class="slide alt" data-win="1">
+  <div class="prompt">~/app $ ./review openspec --honest</div>
+  <h2 class="h2">OpenSpec: pros and cons.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label"># pros</div>
+      <ul class="l s">
+        <li><span class="g">Brownfield first</span>: describe a change, not a system</li>
+        <li>Short documents, easy to review</li>
+        <li>Living specs, unlike Spec Kit and Kiro</li>
+        <li>No API key, no MCP, a plain npm CLI</li>
+        <li>Lowest token use in public benchmarks</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <div class="label"># cons</div>
+      <ul class="l s">
+        <li>No agents, no roles: <span class="a">you</span> are the PM and architect</li>
+        <li>Thin on greenfield discovery and research</li>
+        <li>Young and fast-moving: 1.0 → 1.14 in 2026</li>
+        <li>v1.0 broke the old <span class="a">/openspec:*</span> commands</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · bmad flow -->
+<section class="slide" data-win="1">
+  <div class="prompt">~/app $ npx bmad-method install --modules bmm</div>
+  <h2 class="h2">BMAD: an AI team.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.3;justify-content:center">
+<pre class="ts" style="font-size:29px;line-height:1.45"><span class="muted"># BMad Method track, one fresh context per step</span>
+<span class="g">analyst</span>     brainstorm · research · product brief
+   │
+<span class="g">pm</span>          PRD
+   │
+<span class="g">architect</span>   architecture <span class="muted">+ ux designer: UX spec</span>
+   │
+<span class="g">pm</span>          epics &amp; stories · sprint planning
+   │
+<span class="g">dev</span>         build · code review · retrospective</pre>
+    </div>
+    <div class="col" style="flex:.7">
+      <div class="card warn"><div class="label"># scale-adaptive</div><div class="ts"><span class="a">Quick flow</span>: spec → build. Full method. Enterprise.</div></div>
+      <div class="card dim"><div class="label"># v6</div><div class="ts">Stable in March 2026. 29 skills in the base module.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · bmad verdict -->
+<section class="slide alt" data-win="1">
+  <div class="prompt">~/app $ ./review bmad --honest</div>
+  <h2 class="h2">BMAD: pros and cons.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label"># pros</div>
+      <ul class="l s">
+        <li>Covers the whole lifecycle, not only coding</li>
+        <li>Strong discovery: brief, PRD, PRFAQ, research</li>
+        <li><span class="g">Adversarial review</span> catches design flaws</li>
+        <li>Quick flow for small work</li>
+        <li>Modules: testing, game dev, custom agents</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <div class="label"># cons</div>
+      <ul class="l s">
+        <li><span class="a">Steep learning curve</span>, lots of vocabulary</li>
+        <li>Slow: hours to days of planning per feature</li>
+        <li>Largest footprint: 235 files installed</li>
+        <li><span class="a">Most tokens</span> of the three</li>
+        <li>Name is trademarked (code stays MIT)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · the others -->
+<section class="slide" data-win="2">
+  <div class="prompt">~ $ apt search spec-driven</div>
+  <h2 class="h2">And the rest.</h2>
+  <div class="grid2" style="grid-template-columns:1fr 1fr 1fr;gap:24px;padding-top:0">
+    <div class="card" style="padding:32px"><div class="label"># Kiro · AWS</div><div class="ts" style="font-size:28px">IDE + CLI. Requirements in <span class="g">EARS</span>, then design, tasks. Free: 50 credits/month.</div></div>
+    <div class="card" style="padding:32px"><div class="label"># GSD</div><div class="ts" style="font-size:28px">Subagents with <span class="g">fresh 200k contexts</span> against context rot. Claude Code first.</div></div>
+    <div class="card" style="padding:32px"><div class="label"># Task Master</div><div class="ts" style="font-size:28px">PRD → task graph with dependencies, via MCP. <span class="a">Commons Clause</span>.</div></div>
+    <div class="card warn" style="padding:32px"><div class="label"># Tessl</div><div class="ts" style="font-size:28px">Bet on <span class="a">spec-as-source</span>, then pivoted to a skills registry.</div></div>
+    <div class="card dim" style="padding:32px"><div class="label"># Superpowers</div><div class="ts" style="font-size:28px">Skills: brainstorm → plan → TDD. SDD in all but name.</div></div>
+    <div class="card dim" style="padding:32px"><div class="label"># your agent's plan mode</div><div class="ts" style="font-size:28px">Plan, review, execute. The baseline to beat.</div></div>
+  </div>
+</section>
+
+<!-- 12 · token anatomy -->
+<section class="slide hot" data-win="3">
+  <div class="prompt">~ $ wc -c ~/.claude/skills/**/SKILL.md</div>
+  <h2 class="h2">Where tokens go.</h2>
+  <div class="row">
+    <div class="card dim">
+      <div class="label">[1] always on</div>
+      <div class="big">Descriptions.</div>
+      <div class="ts">Each skill or command name + description sits in every session.</div>
+    </div>
+    <div class="card">
+      <div class="label">[2] per step</div>
+      <div class="big">Instructions.</div>
+      <div class="ts">The prompt of the workflow you run: SKILL.md, templates, step files.</div>
+    </div>
+    <div class="card warn">
+      <div class="label">[3] the real bill</div>
+      <div class="big">Artifacts.</div>
+      <div class="ts">Specs and plans the agent writes, then <span class="a">reads again</span> at every step, plus your code.</div>
+    </div>
+  </div>
+  <div class="foot"># [1] and [2]: measured below · [3]: depends on your project, see benchmarks</div>
+</section>
+
+<!-- 13 · footprint measured -->
+<section class="slide" data-win="3">
+  <div class="prompt">~/lab $ ./measure.sh openspec speckit bmad</div>
+  <h2 class="h2">Measured: the footprint.</h2>
+  <div class="card" style="justify-content:center;padding:32px 48px">
+<pre class="ts" style="font-size:29px;line-height:1.5"><span class="muted">                      OpenSpec     Spec Kit     BMAD (bmm)</span>
+version               1.14.1       1.1.1        6.12.1
+skills (+ commands)   6 + 6        10           29
+files installed       15           30           <span class="r">235</span>
+markdown prompts      94 KB        163 KB       <span class="r">767 KB</span>
+  ≈ tokens            <span class="g">24k</span>          41k          <span class="r">192k</span>
+scripts               —            75 KB sh     382 KB py
+<span class="b">always on</span>             <span class="g b">≈ 640</span>        <span class="g b">≈ 380</span>        <span class="a b">≈ 2,000</span></pre>
+  </div>
+  <div class="foot"># Claude Code install, 2026-10-07 · tokens ≈ bytes ÷ 4 · duplicates counted once</div>
+</section>
+
+<!-- 14 · per feature -->
+<section class="slide alt" data-win="3">
+  <div class="prompt">~/lab $ ./measure.sh --happy-path</div>
+  <h2 class="h2">Measured: one feature.</h2>
+  <div class="card" style="justify-content:center;padding:28px 48px;gap:20px">
+    <div class="label"># workflow instructions loaded for one feature, ≈ tokens</div>
+<div class="bars"><div class="bar"><span>OpenSpec</span><div class="track"><div class="fill " style="width:17%"></div></div><span class="v">11k</span><span class="note">propose · apply · archive</span></div><div class="bar"><span>Spec Kit</span><div class="track"><div class="fill " style="width:27%"></div></div><span class="v">17k</span><span class="note">specify · plan · tasks · implement + templates</span></div><div class="bar"><span>BMAD quick</span><div class="track"><div class="fill a" style="width:38%"></div></div><span class="v">24k</span><span class="note">spec · build</span></div><div class="bar"><span>BMAD full</span><div class="track"><div class="fill r" style="width:100%"></div></div><span class="v">64k</span><span class="note">brief · prd · architecture · epics · sprint · build · review</span></div></div>
+  </div>
+  <div class="foot"># instructions only, before your spec or code · BMAD: upper bound</div>
+</section>
+
+<!-- 15 · benchmarks -->
+<section class="slide" data-win="3">
+  <div class="prompt">~/lab $ grep -h total benchmarks/*.log</div>
+  <h2 class="h2">End to end: about 2×.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.35">
+      <div class="label"># same app, total tokens (IT Chronicles, 2026)</div>
+<div class="bars" style="margin-top:8px"><div class="grps grp">test 1</div><div class="bar"><span>OpenSpec</span><div class="track"><div class="fill " style="width:32%"></div></div><span class="v">57.7k</span></div><div class="bar"><span>Spec Kit</span><div class="track"><div class="fill a" style="width:67%"></div></div><span class="v">120.9k</span></div><div class="grp" style="margin-top:12px">test 2: plan + implement</div><div class="bar"><span>OpenSpec</span><div class="track"><div class="fill " style="width:51%"></div></div><span class="v">91.7k</span></div><div class="bar"><span>Spec Kit</span><div class="track"><div class="fill a" style="width:100%"></div></div><span class="v">181.0k</span></div></div>
+      <div class="ts muted" style="margin-top:auto"># planning alone: 38k vs 96k, +152%</div>
+    </div>
+    <div class="col" style="flex:.75">
+      <div class="card warn"><div class="label"># BMAD (Reinvently)</div><div class="ts">≈ <span class="a b">31.6k</span> tokens per workflow run. $800 to $2,000+ per dev per month on frontier models.</div></div>
+      <div class="card dim"><div class="label"># caveat</div><div class="ts">Few runs each. Read as <span class="a">orders of magnitude</span>.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 16 · time and review -->
+<section class="slide alt" data-win="3">
+  <div class="prompt">~/lab $ time ./build-feature.sh</div>
+  <h2 class="h2">Tokens are not the only cost.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.1">
+      <div class="label"># Scott Logic · Spec Kit vs prompting</div>
+<pre class="ts" style="font-size:29px"><span class="muted">                 Spec Kit    iterative</span>
+agent time       33.5 min    8 min
+markdown         <span class="r">2,577 lines</span> —
+code             689 lines   ~1,000
+human review     <span class="r">3.5 h</span>       15 min</pre>
+      <div class="ts muted" style="margin-top:auto"># Copilot + Sonnet 4.5, Nov 2025</div>
+    </div>
+    <div class="card warn" style="flex:.9">
+      <div class="label"># same dashboard (Reinvently)</div>
+<pre class="ts" style="font-size:29px">OpenSpec   <span class="g">12 min</span>
+Spec Kit   <span class="a">90 min</span>
+BMAD       <span class="r">5.5 h</span></pre>
+      <div class="ts" style="margin-top:auto">The bottleneck moves from writing code to <span class="a">reading markdown</span>.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 · side by side -->
+<section class="slide" data-win="4">
+  <div class="prompt">~ $ column -t matrix.tsv</div>
+  <h2 class="h2">Side by side.</h2>
+  <div class="card" style="justify-content:center;padding:32px 48px">
+<pre class="ts" style="font-size:28px;line-height:1.5"><span class="muted">                 Spec Kit         OpenSpec         BMAD</span>
+model            spec-first       <span class="g">spec-anchored</span>    spec-first, staged
+sweet spot       greenfield       <span class="g">brownfield</span>       greenfield, big
+unit of work     feature branch   change folder    epic / story
+roles            —                —                <span class="g">analyst, pm, ux…</span>
+ceremony         <span class="a">high</span>             <span class="g">low</span>              <span class="r">very high</span> / quick
+review load      <span class="a">high</span>             <span class="g">low</span>              <span class="r">high</span>
+tokens           <span class="a">~2× OpenSpec</span>     <span class="g">lowest</span>           <span class="r">highest</span>
+learning curve   medium           <span class="g">low</span>              <span class="r">steep</span>
+agents           40+              40+              40+</pre>
+  </div>
+</section>
+
+<!-- 18 · common criticism -->
+<section class="slide hot" data-win="4">
+  <div class="prompt">~ $ cat CRITICISM.md</div>
+  <h2 class="h2">What they all share.</h2>
+  <div class="grid2">
+    <div class="card warn"><div class="label"># waterfall in markdown?</div><div class="ts">Big upfront design, again. Fine when the problem is known, painful when it is not.</div></div>
+    <div class="card warn"><div class="label"># review overload</div><div class="ts">Verbose, repetitive documents. Reviewing them can cost more than reviewing code.</div></div>
+    <div class="card"><div class="label"># still non-deterministic</div><div class="ts">A perfect spec does not stop the agent from ignoring it. Tests still decide.</div></div>
+    <div class="card"><div class="label"># one size fits none</div><div class="ts">A typo fix through a full pipeline is a sledgehammer for a nut.</div></div>
+  </div>
+</section>
+
+<!-- 19 · which one -->
+<section class="slide" data-win="4">
+  <div class="prompt">~ $ select sdd in speckit openspec bmad none; do …</div>
+  <h2 class="h2">Which one?</h2>
+  <div class="row">
+    <div class="card" style="flex:1.3;justify-content:center">
+<pre class="ts" style="font-size:30px;line-height:1.5">existing codebase, frequent changes?
+  └─▶ <span class="g b">OpenSpec</span>
+new product, many agents, one standard?
+  └─▶ <span class="g b">Spec Kit</span>
+fuzzy idea, needs PM + architecture work?
+  └─▶ <span class="a b">BMAD</span> <span class="muted">(quick flow for the small stuff)</span>
+long autonomous runs, Claude Code?
+  └─▶ <span class="g">GSD</span>
+small fix?
+  └─▶ <span class="muted">plan mode. No framework.</span></pre>
+    </div>
+    <div class="col" style="flex:.6">
+      <div class="card warn"><div class="label"># rule of thumb</div><div class="ts">Pay for ceremony only where a mistake costs more than the tokens.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 20 · sources -->
+<section class="slide alt" data-win="4">
+  <div class="prompt">~ $ cat SOURCES</div>
+  <h2 class="h2">Sources.</h2>
+  <div class="card" style="padding:32px 48px">
+<pre class="ts" style="font-size:24px;line-height:1.4"><span class="g">repos</span>        github.com/github/spec-kit · Fission-AI/OpenSpec
+             bmad-code-org/BMAD-METHOD · gsd-build/get-shit-done
+             eyaltoledano/claude-task-master · obra/superpowers
+<span class="g">measures</span>     local install of the three tools, 2026-10-07
+<span class="g">levels</span>       martinfowler.com · "Understanding Spec-Driven-Development:
+             Kiro, spec-kit, and Tessl" (Oct 2025)
+<span class="g">tokens</span>       medium.com/it-chronicles · "Spec Driven Development
+             Is Wasting Tokens" (2026)
+<span class="g">BMAD costs</span>   reinvently.co.uk · "GSD, BMAD, OpenSpec, or GitHub
+             Spec Kit" (updated Sep 2026)
+<span class="g">time</span>         blog.scottlogic.com · "Putting Spec Kit Through Its
+             Paces" (Nov 2025)
+<span class="g">scores</span>       ranthebuilder.cloud · "I Tested Three Spec-Driven AI Tools"
+<span class="g">others</span>       kiro.dev pricing · tessl.io blog</pre>
+  </div>
+</section>
+
+<!-- 21 · end -->
+<section class="slide split" data-win="5">
+  <div class="prompt">~ $ /opsx:archive talk</div>
+  <h1 class="h1">Questions?</h1>
+  <div>
+    <p class="sub">The best spec is the one someone actually reads.</p>
+    <div class="t">spec kit <span class="muted">·</span> openspec <span class="muted">·</span> bmad <span class="muted">·</span> <span class="muted">or just a good plan.md</span></div>
+  </div>
+</section>
+
+</div></main>
+
+<script>
+(function () {
+  var W = 1920, H = 1080, wins = ['intro', 'tools', 'others', 'tokens', 'verdict', 'exit'];
+  var root = document.documentElement, slides = [].slice.call(document.querySelectorAll('.slide'));
+  var n = slides.length, cur = 0;
+
+  // tmux-like status bar
+  slides.forEach(function (s, i) {
+    var w = +s.getAttribute('data-win'), bar = document.createElement('div');
+    bar.className = 'status';
+    bar.setAttribute('aria-hidden', 'true');
+    bar.innerHTML = '<span>[sdd]</span>' + wins.map(function (name, k) {
+      return '<span class="w' + (k === w ? ' on' : '') + '">' + k + ':' + name + (k === w ? '*' : '') + '</span>';
+    }).join('') + '<span class="sp"></span><span>' + (i + 1) + '/' + n + '</span>';
+    s.appendChild(bar);
+    s.setAttribute('aria-roledescription', 'slide');
+    s.setAttribute('aria-label', 'Slide ' + (i + 1) + ' of ' + n);
+  });
+
+  function scrollMode() { return window.matchMedia('(max-aspect-ratio: 1/1)').matches; }
+  function fit() {
+    var sc = scrollMode();
+    root.classList.toggle('scroll', sc);
+    var s = sc ? root.clientWidth / W : Math.min(root.clientWidth / W, root.clientHeight / H);
+    root.style.setProperty('--s', String(s > 0 ? s : 1));
+  }
+  function go(i) {
+    cur = Math.max(0, Math.min(n - 1, i));
+    if (scrollMode()) { slides[cur].scrollIntoView(); }
+    slides.forEach(function (s, k) {
+      var on = k === cur;
+      s.classList.toggle('on', on);
+      if (on) s.removeAttribute('inert'); else s.setAttribute('inert', '');
+    });
+    try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) {}
+  }
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if ((k === ' ' && e.shiftKey) || k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp') { e.preventDefault(); go(cur - 1); }
+    else if (k === ' ' || k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown') { e.preventDefault(); go(cur + 1); }
+    else if (k === 'Home') { e.preventDefault(); go(0); }
+    else if (k === 'End') { e.preventDefault(); go(n - 1); }
+    else if (k === 'f' || k === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (root.requestFullscreen) root.requestFullscreen();
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (e.button !== 0 || scrollMode() || String(document.getSelection() || '') !== '') return;
+    go(cur + (e.clientX < root.clientWidth / 2 ? -1 : 1));
+  });
+  var tx = 0, ty = 0, tt = 0;
+  document.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) { tt = 0; return; }
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY; tt = Date.now();
+  }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (scrollMode() || e.changedTouches.length !== 1) return;
+    var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+    if (Date.now() - tt > 700 || Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    go(cur + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+  var wheelLock = false;
+  window.addEventListener('wheel', function (e) {
+    if (e.ctrlKey || scrollMode() || Math.abs(e.deltaY) < 30) return;
+    e.preventDefault();
+    if (wheelLock) return;
+    wheelLock = true; setTimeout(function () { wheelLock = false; }, 450);
+    go(cur + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: false });
+  window.addEventListener('hashchange', function () {
+    var m = /^#(\d+)$/.exec(location.hash);
+    if (m && +m[1] - 1 !== cur) go(+m[1] - 1);
+  });
+
+  fit();
+  var m = /^#(\d+)$/.exec(location.hash);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>
