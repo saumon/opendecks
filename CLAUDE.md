@@ -9,7 +9,7 @@ OpenDecks : des decks HTML autonomes dans `decks/`, publiés sur GitHub Pages. `
    - Un `<title>` court, qui devient le titre de la carte sur l'accueil.
    - Une `<meta name="description">` d'une ligne, qui devient le sous-titre.
 3. **Tout en ligne** : CSS, JS et images (`data:` URI). Seule exception : la police Google Fonts. Pas d'autre ressource externe. La CSP en tête du deck doit rester compatible.
-4. **Style** : reprendre le style « geek terminal » des decks existants. `decks/lean-tech.html` est la base la plus propre à copier.
+4. **Style** : toujours utiliser le thème « geek terminal » des decks existants, sans exception ni variante. `decks/lean-tech.html` est la base la plus propre à copier.
    - Canevas 1920×1080 mis à l'échelle.
    - Police JetBrains Mono.
    - Couleurs : fonds `#0e1116` / `#11161d` / `#0a1a12`, texte `#d8dee4`, vert `#3ddc84`, ambre `#f5a524`, gris `#7d8590`, rouge `#f85149`.
@@ -21,7 +21,7 @@ OpenDecks : des decks HTML autonomes dans `decks/`, publiés sur GitHub Pages. `
    - Clic, balayage tactile, ancre `#n` dans l'URL.
    - Impression : une page par slide.
    - Écran portrait : slides empilées, sans défilement horizontal.
-6. **Langue** : celle des sources ou celle demandée par l'utilisateur. En français, mettre une espace insécable (`&nbsp;`) avant `? : ! ;` et à l'intérieur des guillemets « ».
+6. **Langue** : toujours en **anglais**, même si les sources ou la demande sont en français. Seule exception : l'utilisateur demande explicitement une autre langue pour ce deck. Dans ce cas, en français, mettre une espace insécable (`&nbsp;`) avant `? : ! ;` et à l'intérieur des guillemets « ».
 
 ## Anonymisation (obligatoire)
 

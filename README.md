@@ -46,6 +46,7 @@ Slides are usually trapped in proprietary formats and tools. OpenDecks takes the
 | --- | --- |
 | [lean tech — the manifesto](https://saumon.github.io/opendecks/decks/lean-tech.html) | Book club notes on *The Lean Tech Manifesto*: why Agile doesn't scale and what Lean brings (customer value, team networks, right-first-time, just-in-time, learning organization). In French. |
 | [tmux — the comeback](https://saumon.github.io/opendecks/decks/tmux-the-comeback.html) | Why tmux matters again for remote, agent-driven development. |
+| [vi, vim, neovim — and vis](https://saumon.github.io/opendecks/decks/vi-vim-neovim.html) | From ed to Neovim: the history of modal editing, how vi, Vim and Neovim differ, and vis as a modern alternative. |
 
 The [live site](https://saumon.github.io/opendecks/) always lists the current decks.
 
@@ -74,7 +75,8 @@ Because the index is rebuilt on each deploy, it can never drift out of sync with
 .
 ├── decks/                  # one self-contained .html file per deck
 │   ├── lean-tech.html
-│   └── tmux-the-comeback.html
+│   ├── tmux-the-comeback.html
+│   └── vi-vim-neovim.html
 ├── scripts/
 │   └── build-index.mjs     # generates index.html (Node, no dependencies)
 ├── .github/workflows/
