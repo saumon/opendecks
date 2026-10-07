@@ -1,6 +1,8 @@
 <div align="center">
 
-<img src="assets/logo.webp" alt="OpenDecks" width="240">
+<img src="assets/logo.webp" alt="OpenDecks logo" width="240">
+
+# OpenDecks
 
 **A tiny, zero-dependency home for your slide decks.**
 Drop a self-contained HTML file in a folder, push, and it's live on GitHub Pages with an auto-generated index.
