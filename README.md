@@ -1,6 +1,6 @@
 <div align="center">
 
-# OpenDecks
+<img src="assets/logo.webp" alt="OpenDecks" width="240">
 
 **A tiny, zero-dependency home for your slide decks.**
 Drop a self-contained HTML file in a folder, push, and it's live on GitHub Pages with an auto-generated index.
@@ -74,6 +74,8 @@ Because the index is rebuilt on each deploy, it can never drift out of sync with
 
 ```text
 .
+├── assets/
+│   └── logo.webp           # README logo
 ├── decks/                  # one self-contained .html file per deck
 │   ├── lean-tech.html
 │   ├── sdd-tools-compared.html
