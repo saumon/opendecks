@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src data: https://fonts.gstatic.com; img-src data:; connect-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Life after GitKraken</title>
+<meta name="description" content="Free and open-source Git clients that could replace a paid GitKraken license: pros, cons, what we would lose, and a final comparison.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400..800;1,400..800&amp;display=swap">
+<style>
+:root{
+  --bg:#0e1116; --bg2:#11161d; --bg3:#0a1a12;
+  --fg:#d8dee4; --green:#3ddc84; --amber:#f5a524; --red:#f85149; --muted:#7d8590; --line:#30363d;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{background:#000;color-scheme:dark}
+body{margin:0;background:#000}
+
+/* ---------- canvas 1920×1080 ---------- */
+.slide{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--mono);
+  display:flex;flex-direction:column;gap:32px;padding:120px 128px 150px}
+.slide.alt{background:var(--bg2)}
+.slide.hot{background:var(--bg3)}
+.slide.split{justify-content:space-between;gap:48px}
+
+.prompt{font-size:32px;line-height:1.4;color:var(--green)}
+.prompt::after{content:"▌";margin-left:6px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.h1{font-size:180px;font-weight:800;line-height:1.05;letter-spacing:-4px;margin:0}
+.h2{font-size:96px;font-weight:800;line-height:1.1;letter-spacing:-2px;margin:0}
+.sub{font-size:48px;font-weight:700;line-height:1.4;color:var(--amber);margin:0}
+.muted{color:var(--muted)}
+.g{color:var(--green)} .a{color:var(--amber)} .r{color:var(--red)}
+.b{font-weight:800}
+pre,.pre{font-family:var(--mono);margin:0;white-space:pre}
+
+.row{display:flex;gap:48px;flex:1;min-height:0;padding-top:16px}
+.row.tight{gap:32px}
+.col{display:flex;flex-direction:column;gap:32px;flex:1;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:32px;flex:1;min-height:0;padding-top:16px}
+
+.card{background:var(--bg);border:3px solid var(--green);border-radius:12px;padding:40px;display:flex;flex-direction:column;gap:16px;flex:1;min-width:0}
+.hot .card,.alt .card{background:var(--bg)}
+.card.dim{border-color:var(--line)}
+.card.warn{border-color:var(--amber)}
+.label{font-size:28px;line-height:1.2;color:var(--green)}
+.card.warn .label{color:var(--amber)}
+.t{font-size:34px;line-height:1.4}
+.ts{font-size:30px;line-height:1.4}
+.big{font-size:60px;font-weight:800;line-height:1.1}
+.huge{font-size:120px;font-weight:800;line-height:1;letter-spacing:-3px}
+.quote{font-size:52px;font-weight:700;line-height:1.25}
+.foot{font-size:32px;line-height:1.4;color:var(--muted)}
+ul.l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+ul.l li{font-size:34px;line-height:1.35;padding-left:52px;position:relative}
+ul.l li::before{content:"›";position:absolute;left:12px;color:var(--green);font-weight:800}
+ul.l.s li{font-size:30px}
+.bars{display:flex;flex-direction:column;gap:14px}
+.bar{display:grid;grid-template-columns:260px 1fr 150px;align-items:center;gap:24px;font-size:30px;line-height:1.3}
+.bar .track{height:34px}
+.bar .fill{height:100%;background:var(--green)}
+.bar .fill.a{background:var(--amber)} .bar .fill.r{background:var(--red)}
+.bar .v{text-align:right;font-weight:700}
+.bar .note{grid-column:2/4;font-size:26px;color:var(--muted);margin-top:-8px}
+.bars .grp{font-size:26px;color:var(--muted)}
+
+/* tmux-like status bar */
+.status{position:absolute;left:0;right:0;bottom:0;height:64px;display:flex;align-items:center;gap:28px;padding:0 40px;
+  background:var(--green);color:#0e1116;font-size:26px;font-weight:700}
+.status .w{opacity:.65;font-weight:500}
+.status .w.on{opacity:1;font-weight:800}
+.status .sp{flex:1}
+
+/* ---------- runtime (stage) ---------- */
+.deck{position:fixed;inset:0;overflow:hidden}
+.frame{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform:translate(-50%,-50%) scale(var(--s,1));transform-origin:50% 50%}
+.frame .slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .32s cubic-bezier(.33,.01,.2,1),visibility 0s .32s}
+.frame .slide.on{opacity:1;visibility:visible;transition:opacity .32s cubic-bezier(.33,.01,.2,1)}
+
+/* portrait / phone: stacked slides, vertical scroll */
+html.scroll{overflow:auto}
+html.scroll .deck{position:static;overflow:visible}
+html.scroll .frame{position:static;transform:none;width:auto;height:auto}
+html.scroll .frame .slide{position:relative;opacity:1;visibility:visible;transform:scale(var(--s,1));transform-origin:0 0;margin-bottom:calc(1080px * (var(--s,1) - 1) + 8px)}
+
+@media (prefers-reduced-motion:reduce){.frame .slide,.frame .slide.on{transition:none}.prompt::after{animation:none}}
+@page{size:1920px 1080px;margin:0}
+@media print{
+  html,body{background:none}
+  .deck{position:static}
+  .frame{position:static;transform:none}
+  .frame .slide{position:relative;opacity:1;visibility:visible;break-after:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .prompt::after{display:none}
+}
+</style>
+<body>
+<main class="deck"><div class="frame" id="frame">
+
+<!-- 1 · title -->
+<section class="slide split" data-win="0">
+  <div class="prompt">~ $ gitkraken --license | grep -i renewal</div>
+  <h1 class="h1">Life after<br>GitKraken.</h1>
+  <div>
+    <p class="sub">free &amp; open-source Git clients ──▶ can we stop paying?</p>
+    <div class="foot"># pros &amp; cons · what we would lose · final comparison · snapshot of October 2026</div>
+  </div>
+</section>
+
+<!-- 2 · TL;DR -->
+<section class="slide alt" data-win="0">
+  <div class="prompt">~ $ cat TLDR.md</div>
+  <h2 class="h2">TL;DR.</h2>
+  <div class="row">
+    <div class="card warn">
+      <div class="label">[0] the bill</div>
+      <div class="big">$168+ per seat, every year.</div>
+      <div class="ts">Pro stops at 2 seats. A team pays Advanced or Business.</div>
+    </div>
+    <div class="card">
+      <div class="label">[1] the good news</div>
+      <div class="big">The basics are free.</div>
+      <div class="ts">Graph, staging, merge, interactive rebase: several free tools do them well.</div>
+    </div>
+    <div class="card">
+      <div class="label">[2] the real question</div>
+      <div class="big">One tool or many?</div>
+      <div class="ts">What we lose is the <span class="g">same polished app</span> for everyone, integrations and support.</div>
+    </div>
+  </div>
+  <div class="foot"># no single free client replaces all of GitKraken; a combination can</div>
+</section>
+
+<!-- 3 · the bill -->
+<section class="slide" data-win="1">
+  <div class="prompt">~/finance $ cat gitkraken-pricing.txt</div>
+  <h2 class="h2">What we pay for.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.25;justify-content:center">
+      <div class="label"># list prices, per user, billed yearly</div>
+<pre class="ts" style="font-size:29px;line-height:1.5"><span class="muted">plan         $/month   $/year   seats</span>
+Community    0         0        <span class="r">public repos only</span>
+Pro          8         96       <span class="a">max 2</span>
+<span class="g b">Advanced</span>     14        168      max 10
+<span class="g b">Business</span>     18        216      max 100
+Enterprise   28        336      20+</pre>
+      <div class="ts muted" style="margin-top:auto"># Advanced/Business/Enterprise: new list prices since June–July 2026</div>
+    </div>
+    <div class="col" style="flex:.75">
+      <div class="card warn">
+        <div class="label"># per year, Business plan</div>
+<pre class="ts">10 devs   <span class="a">$2,160</span>
+25 devs   <span class="a">$5,400</span>
+50 devs   <span class="r">$10,800</span></pre>
+      </div>
+      <div class="card dim"><div class="label"># check</div><div class="ts">Our actual invoice: discounts, seats really used.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · what we get -->
+<section class="slide alt" data-win="1">
+  <div class="prompt">~ $ gitkraken --features | sort</div>
+  <h2 class="h2">What the license buys.</h2>
+  <div class="grid2" style="grid-template-columns:1fr 1fr 1fr;gap:24px;padding-top:0">
+    <div class="card" style="padding:32px"><div class="label"># the client</div><div class="ts" style="font-size:28px">Commit graph, <span class="g">drag &amp; drop</span> merge, rebase, cherry-pick. Undo button.</div></div>
+    <div class="card" style="padding:32px"><div class="label"># conflicts</div><div class="ts" style="font-size:28px">Built-in <span class="g">3-way merge editor</span>, plus AI-assisted resolution.</div></div>
+    <div class="card" style="padding:32px"><div class="label"># private repos</div><div class="ts" style="font-size:28px">The free plan works only with <span class="a">public</span> remotes. Ours are private.</div></div>
+    <div class="card" style="padding:32px"><div class="label"># integrations</div><div class="ts" style="font-size:28px">GitHub, GitLab, Bitbucket, Azure DevOps, Jira. PRs and issues in the app.</div></div>
+    <div class="card" style="padding:32px"><div class="label"># team</div><div class="ts" style="font-size:28px">Workspaces (multi-repo), Launchpad, cloud patches, profiles, SSO.</div></div>
+    <div class="card warn" style="padding:32px"><div class="label"># the bundle</div><div class="ts" style="font-size:28px"><span class="a">GitLens Pro</span> in VS Code, the CLI and AI credits share the same license.</div></div>
+  </div>
+</section>
+
+<!-- 5 · landscape -->
+<section class="slide" data-win="2">
+  <div class="prompt">~ $ curl -s api.github.com/repos/… | jq '.stargazers_count'</div>
+  <h2 class="h2">The free landscape.</h2>
+  <div class="card" style="justify-content:center;padding:32px 48px">
+<pre class="ts" style="font-size:28px;line-height:1.5"><span class="muted">client            kind      license      OS          stars   latest</span>
+<span class="g b">GitHub Desktop</span>    GUI       MIT          Win Mac     22k     3.6.6
+<span class="g b">Sourcetree</span>        GUI       <span class="a">proprietary</span>  Win Mac     <span class="muted">—</span>       Atlassian
+<span class="g b">Git Extensions</span>    GUI       GPL-3.0      <span class="a">Win</span>         8.6k    7.2.1
+<span class="g b">GitButler</span>         GUI+CLI   <span class="a">FSL → MIT</span>    Win Mac Lin 22k     0.22.3
+<span class="g b">lazygit</span>           TUI       MIT          Win Mac Lin <span class="g">83k</span>     0.66.0
+<span class="g b">VS Code</span> built-in  editor    MIT          Win Mac Lin <span class="muted">—</span>       monthly
+<span class="g b">JetBrains</span> IDEs    editor    <span class="a">proprietary</span>  Win Mac Lin <span class="muted">—</span>       in the IDE
+Git Cola          GUI       GPL-2.0      Win Mac Lin 2.6k    4.19.0
+Gittyup           GUI       MIT          Win Mac Lin 2.3k    2.0.0</pre>
+  </div>
+  <div class="foot"># GitHub API, 2026-10-08. Stars measure hype, not fitness.</div>
+</section>
+
+<!-- 6 · github desktop -->
+<section class="slide alt" data-win="2">
+  <div class="prompt">~ $ winget install GitHub.GitHubDesktop</div>
+  <h2 class="h2">GitHub Desktop.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label"># pros</div>
+      <ul class="l s">
+        <li><span class="g">Simplest</span> of all: ideal for newcomers</li>
+        <li>MIT, maintained by GitHub, frequent releases</li>
+        <li>Drag &amp; drop cherry-pick, squash, reorder</li>
+        <li>PR status and CI checks for GitHub repos</li>
+        <li>Works with any remote, GitLab included</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <div class="label"># cons</div>
+      <ul class="l s">
+        <li><span class="a">No commit graph</span>: one branch at a time</li>
+        <li>No merge editor: picks a side or opens your editor</li>
+        <li>Integrations: GitHub only</li>
+        <li>No Linux build (community fork only)</li>
+        <li>Power users will hit the ceiling fast</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · sourcetree -->
+<section class="slide" data-win="2">
+  <div class="prompt">~ $ brew install --cask sourcetree</div>
+  <h2 class="h2">Sourcetree.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label"># pros</div>
+      <ul class="l s">
+        <li>Closest <span class="g">look and feel</span> to GitKraken</li>
+        <li>Full graph, interactive rebase, stash, tags</li>
+        <li>Git-flow, Git LFS, submodules built in</li>
+        <li>Accounts for Bitbucket, GitHub, GitLab</li>
+        <li>Free, Atlassian-backed, very widespread</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <div class="label"># cons</div>
+      <ul class="l s">
+        <li><span class="a">No Linux</span>, and none on the roadmap</li>
+        <li>Two codebases: Windows and Mac differ</li>
+        <li>Known to be <span class="a">slow on large repos</span></li>
+        <li>No merge editor: external tool needed</li>
+        <li>Closed source, slow pace of development</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · git extensions -->
+<section class="slide alt" data-win="2">
+  <div class="prompt">C:\src&gt; choco install gitextensions</div>
+  <h2 class="h2">Git Extensions.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label"># pros</div>
+      <ul class="l s">
+        <li>Mature (since 2008), GPL, active project</li>
+        <li><span class="g">Exposes almost all of Git</span>: graph, rebase, bisect…</li>
+        <li>Fast on big histories</li>
+        <li>Scripts and plugins, Visual Studio integration</li>
+        <li>Pairs with KDiff3 or any merge tool</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <div class="label"># cons</div>
+      <ul class="l s">
+        <li><span class="a">Windows only</span> since v4</li>
+        <li>Dense, dated interface</li>
+        <li>No PR or issue integration out of the box</li>
+        <li>Built for people who already know Git</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · gitbutler concept -->
+<section class="slide" data-win="2">
+  <div class="prompt">~/app $ but status</div>
+  <h2 class="h2">GitButler: a new model.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.2;justify-content:center">
+      <div class="label"># parallel branches in one working copy</div>
+<pre class="ts" style="font-size:29px;line-height:1.45">working directory
+  ├── <span class="g">fix-login</span>      2 files  ──▶ PR #412
+  ├── <span class="g">new-export</span>     5 files  ──▶ PR #415
+  │     └── <span class="a">stacked</span>: export-ui
+  └── <span class="muted">unassigned</span>     1 file
+
+<span class="muted"># drag a hunk to a branch, commit, push</span>
+<span class="muted"># every operation is undoable (oplog)</span></pre>
+    </div>
+    <div class="col" style="flex:.8">
+      <div class="card"><div class="label"># by</div><div class="ts">A GitHub co-founder. Tauri app + <span class="g">but</span> CLI.</div></div>
+      <div class="card warn"><div class="label"># license</div><div class="ts"><span class="a">Fair Source</span> (FSL): readable, free to use, MIT after 2 years.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · gitbutler verdict -->
+<section class="slide alt" data-win="2">
+  <div class="prompt">~/app $ ./review gitbutler --honest</div>
+  <h2 class="h2">GitButler: pros and cons.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label"># pros</div>
+      <ul class="l s">
+        <li>Windows, macOS <span class="g">and Linux</span>, free</li>
+        <li>Stacked branches and PRs, GitHub and GitLab</li>
+        <li><span class="g">Undo anything</span>: operation timeline</li>
+        <li>AI commit messages and branch names</li>
+        <li>The most modern UX of the free tools</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <div class="label"># cons</div>
+      <ul class="l s">
+        <li><span class="a">Different mental model</span>: training needed</li>
+        <li>Still 0.x, fast-moving</li>
+        <li>Not OSI open source (non-compete clause)</li>
+        <li>Owns the working copy: mixing tools is awkward</li>
+        <li>No classic full commit graph</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · lazygit -->
+<section class="slide" data-win="2">
+  <div class="prompt">~/app $ lazygit</div>
+  <h2 class="h2">lazygit: the terminal.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label"># pros</div>
+      <ul class="l s">
+        <li><span class="g">Most popular</span> Git client on GitHub: 83k stars</li>
+        <li>Fastest interactive rebase there is: one key each</li>
+        <li>Line-by-line staging, custom commands</li>
+        <li>Undo with <span class="g">z</span>, runs over SSH, every OS</li>
+        <li>MIT, very active: release this week</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <div class="label"># cons</div>
+      <ul class="l s">
+        <li><span class="a">Terminal only</span>: a hard sell for some</li>
+        <li>Keyboard shortcuts to learn</li>
+        <li>Graph is ASCII, no drag &amp; drop</li>
+        <li>Conflicts: pick hunks, no 3-way editor</li>
+        <li>PRs: opens the browser</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"># also in the terminal: gitui (Rust, MIT) · tig (history browser, GPL)</div>
+</section>
+
+<!-- 12 · vs code -->
+<section class="slide alt" data-win="2">
+  <div class="prompt">~/app $ code .</div>
+  <h2 class="h2">VS Code, as is.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label"># pros</div>
+      <ul class="l s">
+        <li>Already installed, zero rollout</li>
+        <li>Built-in <span class="g">Source Control Graph</span></li>
+        <li>Good <span class="g">3-way merge editor</span></li>
+        <li>Free PR extensions: GitHub, GitLab</li>
+        <li>GitLens Community stays free: blame, history</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <div class="label"># cons</div>
+      <ul class="l s">
+        <li>Graph is basic: no drag &amp; drop</li>
+        <li><span class="a">GitLens Pro</span> features leave with GitKraken</li>
+        <li>Git Graph extension: <span class="r">unmaintained</span> since 2021</li>
+        <li>Rebase, reset, reflog: back to the command line</li>
+        <li>Only for people who use VS Code</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 13 · jetbrains -->
+<section class="slide" data-win="2">
+  <div class="prompt">~/app $ idea .</div>
+  <h2 class="h2">JetBrains IDEs.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label"># pros</div>
+      <ul class="l s">
+        <li>Already paid for if the team uses them</li>
+        <li><span class="g">Best-in-class</span> 3-way merge</li>
+        <li>Full log graph, interactive rebase dialog</li>
+        <li>Changelists, shelve, partial commits</li>
+        <li>PR review for GitHub and GitLab</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <div class="label"># cons</div>
+      <ul class="l s">
+        <li>Only for JetBrains users</li>
+        <li>Heavy to open just to do Git</li>
+        <li>One project window at a time</li>
+        <li>Proprietary</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 14 · the rest -->
+<section class="slide alt" data-win="2">
+  <div class="prompt">~ $ apt search git-gui</div>
+  <h2 class="h2">And the rest.</h2>
+  <div class="grid2" style="grid-template-columns:1fr 1fr 1fr;gap:24px;padding-top:0">
+    <div class="card" style="padding:32px"><div class="label"># Git Cola</div><div class="ts" style="font-size:28px">Python/Qt, GPL. Great staging and a rebase editor. Graph in a separate window.</div></div>
+    <div class="card" style="padding:32px"><div class="label"># Gittyup</div><div class="ts" style="font-size:28px">Fork of the dead GitAhead. MIT, every OS, <span class="a">small community</span>.</div></div>
+    <div class="card" style="padding:32px"><div class="label"># gitui · tig</div><div class="ts" style="font-size:28px">Terminal alternatives to lazygit. Fast, less complete.</div></div>
+    <div class="card warn" style="padding:32px"><div class="label"># Fork · not free</div><div class="ts" style="font-size:28px">Win/Mac, very fast, close to GitKraken. <span class="a">$59.99 once</span> per user.</div></div>
+    <div class="card warn" style="padding:32px"><div class="label"># Sublime Merge · not free</div><div class="ts" style="font-size:28px">Every OS, very fast. Business: <span class="a">$50–65/seat/year</span>.</div></div>
+    <div class="card dim" style="padding:32px"><div class="label"># git + gh/glab CLIs</div><div class="ts" style="font-size:28px">The baseline. Free, scriptable, always there.</div></div>
+  </div>
+  <div class="foot"># Fork and Sublime Merge can be evaluated freely, but commercial use needs a license</div>
+</section>
+
+<!-- 15 · what we lose -->
+<section class="slide hot" data-win="3">
+  <div class="prompt">~ $ diff gitkraken.features free.features</div>
+  <h2 class="h2">What we would lose.</h2>
+  <div class="grid2" style="grid-template-columns:1fr 1fr 1fr;gap:24px;padding-top:0">
+    <div class="card warn" style="padding:32px"><div class="label"># one tool for all</div><div class="ts" style="font-size:28px">Same app on Win, Mac, Linux. One way to train, document and help.</div></div>
+    <div class="card warn" style="padding:32px"><div class="label"># drag &amp; drop graph</div><div class="ts" style="font-size:28px">Merge, rebase and cherry-pick by mouse. Only Sourcetree and Fork come close.</div></div>
+    <div class="card warn" style="padding:32px"><div class="label"># PRs in the client</div><div class="ts" style="font-size:28px">Launchpad, issues, Jira. Back to the browser or the IDE.</div></div>
+    <div class="card" style="padding:32px"><div class="label"># workspaces</div><div class="ts" style="font-size:28px">Fetch, branch and check out across many repos at once.</div></div>
+    <div class="card" style="padding:32px"><div class="label"># GitLens Pro &amp; AI</div><div class="ts" style="font-size:28px">Commit Graph in VS Code, AI commits, PR summaries, conflict help.</div></div>
+    <div class="card" style="padding:32px"><div class="label"># vendor</div><div class="ts" style="font-size:28px">Support SLA, SSO, central license admin, audit logs.</div></div>
+  </div>
+</section>
+
+<!-- 16 · replacements -->
+<section class="slide" data-win="3">
+  <div class="prompt">~ $ sed 's/gitkraken/free/' features.txt</div>
+  <h2 class="h2">Every loss, a workaround.</h2>
+  <div class="card" style="justify-content:center;padding:32px 48px">
+<pre class="ts" style="font-size:28px;line-height:1.5"><span class="muted">lost                      free replacement</span>
+same GUI everywhere       <span class="g">GitButler</span> · <span class="g">VS Code</span> · <span class="g">lazygit</span>
+drag &amp; drop graph         Sourcetree · Git Extensions <span class="muted">(click, not drag)</span>
+3-way merge editor        <span class="g">VS Code</span> · JetBrains · Meld · KDiff3
+PRs &amp; issues              <span class="g">gh</span> / <span class="g">glab</span> CLIs · IDE PR extensions
+Launchpad                 GitHub/GitLab "review requested" pages
+workspaces                VS Code multi-root · a 10-line script
+profiles (identities)     git config <span class="g">includeIf</span>
+undo                      reflog · lazygit <span class="g">z</span> · GitButler oplog
+AI commit messages        Copilot · GitButler · the coding agent
+vendor support            <span class="a">none</span>: community, issues, docs</pre>
+  </div>
+</section>
+
+<!-- 17 · hidden costs -->
+<section class="slide alt" data-win="3">
+  <div class="prompt">~ $ time ./migrate-team.sh</div>
+  <h2 class="h2">Switching is not free.</h2>
+  <div class="grid2">
+    <div class="card warn"><div class="label"># retraining</div><div class="ts">Hours per person, more for juniors who learned Git through GitKraken.</div></div>
+    <div class="card warn"><div class="label"># tool sprawl</div><div class="ts">Five clients in one team: pairing and helping each other get harder.</div></div>
+    <div class="card"><div class="label"># docs and onboarding</div><div class="ts">Screenshots, guides and onboarding checklists to rewrite.</div></div>
+    <div class="card"><div class="label"># the upside</div><div class="ts">Teams that drop the GUI often <span class="g">understand Git better</span>.</div></div>
+  </div>
+</section>
+
+<!-- 18 · which one -->
+<section class="slide" data-win="4">
+  <div class="prompt">~ $ select git in sourcetree gitext gitbutler lazygit ide; do …</div>
+  <h2 class="h2">Which one?</h2>
+  <div class="row">
+    <div class="card" style="flex:1.35;justify-content:center">
+<pre class="ts" style="font-size:29px;line-height:1.5">lives in VS Code or a JetBrains IDE?
+  └─▶ <span class="g b">the IDE</span> <span class="muted">+ free PR extensions</span>
+wants a GitKraken-like GUI, Win/Mac?
+  └─▶ <span class="g b">Sourcetree</span> <span class="muted">(or Fork, $60 once)</span>
+Windows power user?
+  └─▶ <span class="g b">Git Extensions</span>
+Linux, or many branches at once?
+  └─▶ <span class="a b">GitButler</span>
+at home in a terminal?
+  └─▶ <span class="g b">lazygit</span></pre>
+    </div>
+    <div class="col" style="flex:.6">
+      <div class="card warn"><div class="label"># before renewal</div><div class="ts">A <span class="a">2-week pilot</span> with 3–5 volunteers on real work.</div></div>
+      <div class="card dim"><div class="label"># fallback</div><div class="ts">Keep a few seats for those who really need it.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 19 · final comparison -->
+<section class="slide alt" data-win="4">
+  <div class="prompt">~ $ column -t matrix.tsv</div>
+  <h2 class="h2">Final comparison.</h2>
+  <div class="card" style="justify-content:center;padding:28px 44px">
+<pre class="ts" style="font-size:26px;line-height:1.5"><span class="muted">                cost/seat/yr  license  Win Mac Lin  graph merge rebase PRs  learning</span>
+<span class="a b">GitKraken</span>       <span class="r">$168–216</span>      closed    ●   ●   ●     ●     ●     ●     ●   easy
+<span class="g b">GitHub Desktop</span>  <span class="g">free</span>          MIT       ●   ●   ◐     ○     ◐     ◐     ◐   <span class="g">easiest</span>
+<span class="g b">Sourcetree</span>      <span class="g">free</span>          closed    ●   ●   ○     ●     ◐     ●     ◐   easy
+<span class="g b">Git Extensions</span>  <span class="g">free</span>          GPL-3     ●   ○   ○     ●     ◐     ●     ◐   medium
+<span class="g b">GitButler</span>       <span class="g">free</span>          FSL       ●   ●   ●     ◐     ◐     ●     ●   <span class="a">new model</span>
+<span class="g b">lazygit</span>         <span class="g">free</span>          MIT       ●   ●   ●     ◐     ◐     ●     ◐   <span class="a">steep</span>
+<span class="g b">VS Code</span>         <span class="g">free</span>          MIT       ●   ●   ●     ◐     ●     ◐     ●   easy
+<span class="g b">JetBrains IDE</span>   <span class="muted">in IDE lic.</span>   closed    ●   ●   ●     ●     ●     ●     ●   medium
+<span class="g b">Git Cola</span>        <span class="g">free</span>          GPL-2     ●   ●   ●     ◐     ◐     ●     ○   medium
+<span class="muted">Fork</span>            <span class="a">$60 once</span>      closed    ●   ●   ○     ●     ●     ●     ◐   easy</pre>
+  </div>
+  <div class="foot"># ● native · ◐ partial, via browser, plugin or external tool · ○ none</div>
+</section>
+
+<!-- 20 · sources -->
+<section class="slide" data-win="4">
+  <div class="prompt">~ $ cat SOURCES</div>
+  <h2 class="h2">Sources.</h2>
+  <div class="card" style="padding:32px 48px">
+<pre class="ts" style="font-size:24px;line-height:1.45"><span class="g">pricing</span>      gitkraken.com/pricing · schneider.im "GitKraken new list
+             prices" (June 2026) · g2.com GitKraken Desktop pricing
+<span class="g">repos</span>        github.com/desktop/desktop · gitextensions/gitextensions
+             gitbutlerapp/gitbutler · jesseduffield/lazygit
+             git-cola/git-cola · Murmele/Gittyup · gitui-org/gitui
+             jonas/tig · mhutchie/vscode-git-graph · gitkraken/vscode-gitlens
+<span class="g">stats</span>        GitHub API, 2026-10-08
+<span class="g">Sourcetree</span>   community.atlassian.com · "SourceTree for Linux"
+<span class="g">GitButler</span>    docs.gitbutler.com · "GitButler is now Fair Source"
+<span class="g">paid peers</span>   fork.dev · sublimehq.com/store/merge
+<span class="g">overview</span>     git-scm.com/tools/guis</pre>
+  </div>
+</section>
+
+<!-- 21 · end -->
+<section class="slide split" data-win="5">
+  <div class="prompt">~ $ gitkraken --cancel-subscription --dry-run</div>
+  <h1 class="h1">Questions?</h1>
+  <div>
+    <p class="sub">The best Git client is the one the team actually understands.</p>
+    <div class="t">sourcetree <span class="muted">·</span> git extensions <span class="muted">·</span> gitbutler <span class="muted">·</span> lazygit <span class="muted">·</span> <span class="muted">or just the IDE</span></div>
+  </div>
+</section>
+
+</div></main>
+
+<script>
+(function () {
+  var W = 1920, H = 1080, wins = ['intro', 'bill', 'clients', 'losses', 'verdict', 'exit'];
+  var root = document.documentElement, slides = [].slice.call(document.querySelectorAll('.slide'));
+  var n = slides.length, cur = 0;
+
+  // tmux-like status bar
+  slides.forEach(function (s, i) {
+    var w = +s.getAttribute('data-win'), bar = document.createElement('div');
+    bar.className = 'status';
+    bar.setAttribute('aria-hidden', 'true');
+    bar.innerHTML = '<span>[git]</span>' + wins.map(function (name, k) {
+      return '<span class="w' + (k === w ? ' on' : '') + '">' + k + ':' + name + (k === w ? '*' : '') + '</span>';
+    }).join('') + '<span class="sp"></span><span>' + (i + 1) + '/' + n + '</span>';
+    s.appendChild(bar);
+    s.setAttribute('aria-roledescription', 'slide');
+    s.setAttribute('aria-label', 'Slide ' + (i + 1) + ' of ' + n);
+  });
+
+  function scrollMode() { return window.matchMedia('(max-aspect-ratio: 1/1)').matches; }
+  function fit() {
+    var sc = scrollMode();
+    root.classList.toggle('scroll', sc);
+    var s = sc ? root.clientWidth / W : Math.min(root.clientWidth / W, root.clientHeight / H);
+    root.style.setProperty('--s', String(s > 0 ? s : 1));
+  }
+  function go(i) {
+    cur = Math.max(0, Math.min(n - 1, i));
+    if (scrollMode()) { slides[cur].scrollIntoView(); }
+    slides.forEach(function (s, k) {
+      var on = k === cur;
+      s.classList.toggle('on', on);
+      if (on) s.removeAttribute('inert'); else s.setAttribute('inert', '');
+    });
+    try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) {}
+  }
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if ((k === ' ' && e.shiftKey) || k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp') { e.preventDefault(); go(cur - 1); }
+    else if (k === ' ' || k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown') { e.preventDefault(); go(cur + 1); }
+    else if (k === 'Home') { e.preventDefault(); go(0); }
+    else if (k === 'End') { e.preventDefault(); go(n - 1); }
+    else if (k === 'f' || k === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (root.requestFullscreen) root.requestFullscreen();
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (e.button !== 0 || scrollMode() || String(document.getSelection() || '') !== '') return;
+    go(cur + (e.clientX < root.clientWidth / 2 ? -1 : 1));
+  });
+  var tx = 0, ty = 0, tt = 0;
+  document.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) { tt = 0; return; }
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY; tt = Date.now();
+  }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (scrollMode() || e.changedTouches.length !== 1) return;
+    var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+    if (Date.now() - tt > 700 || Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    go(cur + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+  var wheelLock = false;
+  window.addEventListener('wheel', function (e) {
+    if (e.ctrlKey || scrollMode() || Math.abs(e.deltaY) < 30) return;
+    e.preventDefault();
+    if (wheelLock) return;
+    wheelLock = true; setTimeout(function () { wheelLock = false; }, 450);
+    go(cur + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: false });
+  window.addEventListener('hashchange', function () {
+    var m = /^#(\d+)$/.exec(location.hash);
+    if (m && +m[1] - 1 !== cur) go(+m[1] - 1);
+  });
+
+  fit();
+  var m = /^#(\d+)$/.exec(location.hash);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

@@ -47,6 +47,7 @@ Slides are usually trapped in proprietary formats and tools. OpenDecks takes the
 | Deck | Topic |
 | --- | --- |
 | [lean tech — the manifesto](https://saumon.github.io/opendecks/decks/lean-tech.html) | Book club notes on *The Lean Tech Manifesto*: why Agile doesn't scale and what Lean brings (customer value, team networks, right-first-time, just-in-time, learning organization). In French. |
+| [Life after GitKraken](https://saumon.github.io/opendecks/decks/gitkraken-alternatives.html) | Free and open-source Git clients (GitHub Desktop, Sourcetree, Git Extensions, GitButler, lazygit, IDEs…) as an alternative to a paid GitKraken license: pros and cons, what we would lose, and a final comparison. |
 | [Spec-driven dev, compared](https://saumon.github.io/opendecks/decks/sdd-tools-compared.html) | BMAD, OpenSpec, GitHub Spec Kit and the rest (Kiro, GSD, Task Master, Tessl): workflows, pros and cons, and measured token costs. |
 | [tmux — the comeback](https://saumon.github.io/opendecks/decks/tmux-the-comeback.html) | Why tmux matters again for remote, agent-driven development. |
 | [vi, vim, neovim — and vis](https://saumon.github.io/opendecks/decks/vi-vim-neovim.html) | From ed to Neovim: the history of modal editing, how vi, Vim and Neovim differ, and vis as a modern alternative. |
@@ -79,6 +80,7 @@ Because the index is rebuilt on each deploy, it can never drift out of sync with
 ├── assets/
 │   └── logo.webp           # README logo
 ├── decks/                  # one self-contained .html file per deck
+│   ├── gitkraken-alternatives.html
 │   ├── lean-tech.html
 │   ├── sdd-tools-compared.html
 │   ├── tmux-the-comeback.html
