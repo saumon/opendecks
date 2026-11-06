@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src data: https://fonts.gstatic.com; img-src data:; connect-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tailscale for developers</title>
+<meta name="description" content="A WireGuard mesh VPN for developers: how it works, access control, dev tools, pricing and alternatives.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400..800;1,400..800&amp;display=swap">
+<style>
+:root{
+  --bg:#0e1116; --bg2:#11161d; --bg3:#0a1a12;
+  --fg:#d8dee4; --green:#3ddc84; --amber:#f5a524; --red:#f85149; --muted:#7d8590; --line:#30363d;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{background:#000;color-scheme:dark}
+body{margin:0;background:#000}
+
+/* ---------- canvas 1920×1080 ---------- */
+.slide{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--mono);
+  display:flex;flex-direction:column;gap:32px;padding:120px 128px 150px}
+.slide.alt{background:var(--bg2)}
+.slide.hot{background:var(--bg3)}
+.slide.split{justify-content:space-between;gap:48px}
+
+.prompt{font-size:32px;line-height:1.4;color:var(--green)}
+.prompt::after{content:"▌";margin-left:6px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.h1{font-size:180px;font-weight:800;line-height:1.05;letter-spacing:-4px;margin:0}
+.h2{font-size:96px;font-weight:800;line-height:1.1;letter-spacing:-2px;margin:0}
+.sub{font-size:48px;font-weight:700;line-height:1.4;color:var(--amber);margin:0}
+.muted{color:var(--muted)}
+.g{color:var(--green)} .a{color:var(--amber)} .r{color:var(--red)}
+.b{font-weight:800}
+pre,.pre{font-family:var(--mono);margin:0;white-space:pre}
+
+.row{display:flex;gap:48px;flex:1;min-height:0;padding-top:16px}
+.row.tight{gap:32px}
+.col{display:flex;flex-direction:column;gap:32px;flex:1;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:32px;flex:1;min-height:0;padding-top:16px}
+
+.card{background:var(--bg);border:3px solid var(--green);border-radius:12px;padding:40px;display:flex;flex-direction:column;gap:16px;flex:1;min-width:0}
+.hot .card,.alt .card{background:var(--bg)}
+.card.dim{border-color:var(--line)}
+.card.warn{border-color:var(--amber)}
+.label{font-size:28px;line-height:1.2;color:var(--green)}
+.card.warn .label{color:var(--amber)}
+.t{font-size:34px;line-height:1.4}
+.ts{font-size:30px;line-height:1.4}
+.big{font-size:60px;font-weight:800;line-height:1.1}
+.huge{font-size:120px;font-weight:800;line-height:1;letter-spacing:-3px}
+.quote{font-size:52px;font-weight:700;line-height:1.25}
+.foot{font-size:32px;line-height:1.4;color:var(--muted)}
+ul.l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+ul.l li{font-size:34px;line-height:1.35;padding-left:52px;position:relative}
+ul.l li::before{content:"›";position:absolute;left:12px;color:var(--green);font-weight:800}
+ul.l.s li{font-size:30px}
+
+/* tmux-like status bar */
+.status{position:absolute;left:0;right:0;bottom:0;height:64px;display:flex;align-items:center;gap:28px;padding:0 40px;
+  background:var(--green);color:#0e1116;font-size:26px;font-weight:700}
+.status .w{opacity:.65;font-weight:500}
+.status .w.on{opacity:1;font-weight:800}
+.status .sp{flex:1}
+
+/* ---------- runtime (stage) ---------- */
+.deck{position:fixed;inset:0;overflow:hidden}
+.frame{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform:translate(-50%,-50%) scale(var(--s,1));transform-origin:50% 50%}
+.frame .slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .32s cubic-bezier(.33,.01,.2,1),visibility 0s .32s}
+.frame .slide.on{opacity:1;visibility:visible;transition:opacity .32s cubic-bezier(.33,.01,.2,1)}
+
+/* portrait / phone: stacked slides, vertical scroll */
+html.scroll{overflow:auto}
+html.scroll .deck{position:static;overflow:visible}
+html.scroll .frame{position:static;transform:none;width:auto;height:auto}
+html.scroll .frame .slide{position:relative;opacity:1;visibility:visible;transform:scale(var(--s,1));transform-origin:0 0;margin-bottom:calc(1080px * (var(--s,1) - 1) + 8px)}
+
+@media (prefers-reduced-motion:reduce){.frame .slide,.frame .slide.on{transition:none}.prompt::after{animation:none}}
+@page{size:1920px 1080px;margin:0}
+@media print{
+  html,body{background:none}
+  .deck{position:static}
+  .frame{position:static;transform:none}
+  .frame .slide{position:relative;opacity:1;visibility:visible;break-after:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .prompt::after{display:none}
+}
+</style>
+</head>
+<body>
+<main class="deck"><div class="frame" id="frame">
+
+<!-- 1 · title -->
+<section class="slide split" data-win="0">
+  <div class="prompt">~ $ tailscale up</div>
+  <h1 class="h1">Your laptop,<br>anywhere.</h1>
+  <div>
+    <p class="sub">A WireGuard mesh VPN ──▶ zero-config for devs</p>
+    <div class="foot"># how it works · access control · dev tools · pricing</div>
+  </div>
+</section>
+
+<!-- 2 · TL;DR -->
+<section class="slide alt" data-win="0">
+  <div class="prompt">~ $ tailscale --help</div>
+  <h2 class="h2">TL;DR.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label">[0] mesh · WireGuard</div>
+      <div class="big">Peer to peer.</div>
+      <div class="ts">Devices talk directly. A control server only swaps keys and policy.</div>
+    </div>
+    <div class="card">
+      <div class="label">[1] identity · SSO</div>
+      <div class="big">Who, not where.</div>
+      <div class="ts">Log in with your identity provider. Rules target users and tags, not IPs.</div>
+    </div>
+    <div class="card warn">
+      <div class="label">[2] developer tools</div>
+      <div class="big">Dev friendly.</div>
+      <div class="ts">serve, funnel, SSH, and a Go library to embed a node in your app.</div>
+    </div>
+  </div>
+  <div class="foot"># free for personal use, paid for work</div>
+</section>
+
+<!-- 3 · control plane / data plane -->
+<section class="slide" data-win="1">
+  <div class="prompt">~/ts $ tailscale status</div>
+  <h2 class="h2">Control plane, data plane.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.1;justify-content:center">
+<pre class="ts">   ┌────────────────────────────┐
+   │ <span class="g b">coordination server</span>        │
+   │ keys · policy · netmap     │
+   └─────<span class="a">▲</span>──────────────────<span class="a">▲</span>───┘
+         │                  │
+     ┌───┴────┐         ┌───┴────┐
+     │ laptop │<span class="g b">◄═══════►</span>│  box   │
+     └────────┘         └────────┘
+          <span class="muted"># WireGuard tunnel</span></pre>
+    </div>
+    <div class="col" style="flex:.9">
+      <div class="card"><div class="label"># control plane</div><div class="ts">Exchanges <span class="g">public keys</span> and policy. Carries <span class="g">virtually no traffic</span>.</div></div>
+      <div class="card warn"><div class="label"># data plane</div><div class="ts">A WireGuard <span class="a">mesh</span>. The private key <span class="a">never leaves</span> its node.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · connection types -->
+<section class="slide alt" data-win="1">
+  <div class="prompt">~/ts $ tailscale ping box</div>
+  <h2 class="h2">Direct, or relayed.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.25">
+      <div class="label"># what you see</div>
+<pre class="ts" style="font-size:28px">$ tailscale ping box
+pong from box <span class="a">via DERP(nyc)</span>
+pong from box <span class="g">via 140.82.13.138:41641</span>
+
+$ tailscale status
+… active; <span class="g">direct 140.82.13.138:41641</span>
+… active; <span class="a">relay "tor"</span>
+… active; <span class="a">peer-relay</span></pre>
+      <div class="ts muted" style="margin-top:auto"># first relayed, then upgraded to direct</div>
+    </div>
+    <div class="col" style="flex:.85">
+      <div class="card"><div class="label"># the order</div>
+<pre class="ts" style="font-size:28px"><span class="a">1</span> DERP relay  <span class="muted"># at first</span>
+<span class="a">2</span> direct UDP   <span class="muted"># NAT traversal</span>
+<span class="a">3</span> peer relay   <span class="muted"># if (2) fails</span>
+<span class="a">4</span> DERP again   <span class="muted"># if (3) fails</span></pre></div>
+      <div class="card dim"><div class="label"># same security</div><div class="ts">All end-to-end encrypted. Only <span class="g">performance</span> differs.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · grants -->
+<section class="slide" data-win="2">
+  <div class="prompt">~/ts $ cat policy.hujson</div>
+  <h2 class="h2">Grants, not ACLs.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.2;justify-content:center">
+<pre class="ts" style="font-size:30px">{
+  <span class="a">"tagOwners"</span>: {
+    <span class="g">"tag:server"</span>: ["group:platform"]
+  },
+  <span class="a">"grants"</span>: [{
+    "src": ["group:dev"],
+    "dst": [<span class="g">"tag:server"</span>],
+    "ip":  ["tcp:22", "tcp:443"]
+  }]
+}</pre>
+    </div>
+    <div class="col" style="flex:.8">
+      <div class="card"><div class="label"># tags</div><div class="ts">Servers log in as a <span class="g">tag</span>, not as a person. <span class="g">tagOwners</span> says who may apply it.</div></div>
+      <div class="card warn"><div class="label"># ACLs?</div><div class="ts">Still work, but get <span class="a">no new features</span>. Prefer grants.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · SSH -->
+<section class="slide alt" data-win="2">
+  <div class="prompt">~ $ tailscale up --ssh</div>
+  <h2 class="h2">SSH without keys.</h2>
+  <div class="row">
+    <div class="card" style="flex:1.1;justify-content:center">
+<pre class="ts" style="font-size:30px"><span class="muted"># on the server</span>
+$ tailscale up <span class="g b">--ssh</span>
+
+<span class="muted"># in the policy</span>
+<span class="a">"ssh"</span>: [{
+  "action": <span class="g">"check"</span>,
+  "src":   ["autogroup:member"],
+  "dst":   ["tag:server"],
+  "users": ["root"]
+}]</pre>
+    </div>
+    <div class="col" style="flex:.9">
+      <div class="card"><div class="label"># how</div><div class="ts">Tailscale takes over <span class="g">port 22</span> for tailnet traffic. <span class="g">Node keys</span> authenticate, WireGuard encrypts.</div></div>
+      <div class="card warn"><div class="label"># check mode</div><div class="ts">Re-authenticate for risky logins (like <span class="a">root</span>), then access for <span class="a">12 hours</span> (or a set period).</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · serve / funnel / tsnet -->
+<section class="slide" data-win="3">
+  <div class="prompt">~/app $ tailscale serve 3000</div>
+  <h2 class="h2">Serve. Funnel. Embed.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label"># share a local server</div>
+<pre class="t" style="font-size:34px">$ tailscale <span class="g b">serve</span>  3000  <span class="muted"># tailnet</span>
+$ tailscale <span class="a b">funnel</span> 3000  <span class="muted"># internet</span></pre>
+      <ul class="l s" style="margin-top:auto;gap:18px">
+        <li>Funnel: ports <span class="a">443, 8443, 10000</span></li>
+        <li>TLS only, capped bandwidth</li>
+        <li>Needs HTTPS + <span class="a">funnel</span> attribute</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <div class="label"># tsnet · embed a node in Go</div>
+<pre class="ts" style="font-size:32px;line-height:1.5">s := &amp;tsnet.Server{
+  Hostname: "my-service",
+}
+defer s.Close()
+ln, _ := s.Listen("tcp", ":80")
+http.Serve(ln, handler)</pre>
+      <div class="ts" style="margin-top:auto">A plain <span class="a">net.Listener</span>, reachable only over the tailnet.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · network -->
+<section class="slide alt" data-win="4">
+  <div class="prompt">~/infra $ tailscale up --advertise-routes=10.0.0.0/24</div>
+  <h2 class="h2">Reach the rest.</h2>
+  <div class="row">
+    <div class="card">
+      <div class="label">[0] subnet router</div>
+      <div class="big">A gateway.</div>
+      <div class="ts">Advertises a CIDR so devices <span class="g">without Tailscale</span> become reachable.</div>
+    </div>
+    <div class="card">
+      <div class="label">[1] exit node</div>
+      <div class="big">A way out.</div>
+      <div class="ts">Sends a device's internet traffic through one node: fixed IP or region.</div>
+    </div>
+    <div class="card warn">
+      <div class="label">[2] app connector</div>
+      <div class="big">SaaS access.</div>
+      <div class="ts">Identity-aware access to public SaaS apps, with central policy.</div>
+    </div>
+  </div>
+  <div class="foot"># on Kubernetes, one Connector resource can play all three roles</div>
+</section>
+
+<!-- 9 · pricing -->
+<section class="slide" data-win="5">
+  <div class="prompt">~ $ cat PRICING.md</div>
+  <h2 class="h2">Free, but not for work.</h2>
+  <div class="row">
+    <div class="card warn" style="justify-content:center">
+      <div class="label">Personal</div>
+      <div class="huge a">$0</div>
+      <div class="ts"><span class="a">Non-commercial only.</span> Up to 6 users, unlimited devices.</div>
+    </div>
+    <div class="card" style="justify-content:center">
+      <div class="label">Standard</div>
+      <div class="huge g">$8</div>
+      <div class="ts">per user / month. Unlimited users, SCIM, device posture.</div>
+    </div>
+    <div class="card" style="justify-content:center">
+      <div class="label">Premium</div>
+      <div class="huge g">$18</div>
+      <div class="ts">per user / month. Advanced SSH, flow logs, just-in-time access.</div>
+    </div>
+  </div>
+  <div class="foot"># Enterprise: custom · prices as listed on tailscale.com in Nov 2026</div>
+</section>
+
+<!-- 10 · alternatives -->
+<section class="slide alt" data-win="5">
+  <div class="prompt">~ $ apt show headscale</div>
+  <h2 class="h2">Alternatives and limits.</h2>
+  <div class="grid2">
+    <div class="card"><div class="label"># headscale</div>
+      <ul class="l s" style="gap:20px">
+        <li>Open-source, self-hosted control server</li>
+        <li>ACLs, grants, SSH, OIDC, embedded DERP</li>
+        <li>Tags, routes, MagicDNS</li>
+        <li>BSD-3-Clause license</li>
+      </ul></div>
+    <div class="card warn"><div class="label"># its limits</div>
+      <ul class="l s" style="gap:20px">
+        <li><span class="a">One tailnet</span> only</li>
+        <li>"Not enterprise software"</li>
+        <li>Docker not officially supported</li>
+        <li>Not associated with Tailscale Inc.</li>
+      </ul></div>
+  </div>
+  <div class="foot"># trade-off: keys and policy live on a server you don't run</div>
+</section>
+
+<!-- 11 · sources -->
+<section class="slide" data-win="6">
+  <div class="prompt">~ $ cat SOURCES.md</div>
+  <h2 class="h2">Sources.</h2>
+  <div class="card dim" style="justify-content:center">
+<pre class="ts" style="font-size:28px"><span class="g">[1]</span> tailscale.com/blog/how-tailscale-works <span class="muted">(2020-03-20)</span>
+<span class="g">[2]</span> tailscale.com/kb/1257/connection-types
+<span class="g">[3]</span> tailscale.com/docs: grants, tags, SSH, Funnel
+<span class="g">[4]</span> tailscale.com/pricing
+<span class="g">[5]</span> github.com/tailscale/tailscale: tsnet README
+<span class="g">[6]</span> headscale.net: features and FAQ
+<span class="muted"># consulted November 2026</span></pre>
+  </div>
+</section>
+
+<!-- 12 · end -->
+<section class="slide split" data-win="6">
+  <div class="prompt">~ $ exit 0</div>
+  <h1 class="h1">Questions?</h1>
+  <div>
+    <p class="sub">next ──▶ try it on two machines</p>
+    <div class="foot"># tailscale up</div>
+  </div>
+</section>
+
+</div></main>
+
+<script>
+(function () {
+  var W = 1920, H = 1080, wins = ['intro', 'how', 'access', 'dev', 'net', 'plan', 'exit'];
+  var root = document.documentElement, slides = [].slice.call(document.querySelectorAll('.slide'));
+  var n = slides.length, cur = 0;
+
+  // tmux-like status bar
+  slides.forEach(function (s, i) {
+    var w = +s.getAttribute('data-win'), bar = document.createElement('div');
+    bar.className = 'status';
+    bar.setAttribute('aria-hidden', 'true');
+    bar.innerHTML = '<span>[ts]</span>' + wins.map(function (name, k) {
+      return '<span class="w' + (k === w ? ' on' : '') + '">' + k + ':' + name + (k === w ? '*' : '') + '</span>';
+    }).join('') + '<span class="sp"></span><span>' + (i + 1) + '/' + n + '</span>';
+    s.appendChild(bar);
+    s.setAttribute('aria-roledescription', 'slide');
+    s.setAttribute('aria-label', 'Slide ' + (i + 1) + ' of ' + n);
+  });
+
+  function scrollMode() { return window.matchMedia('(max-aspect-ratio: 1/1)').matches; }
+  function fit() {
+    var sc = scrollMode();
+    root.classList.toggle('scroll', sc);
+    var s = sc ? root.clientWidth / W : Math.min(root.clientWidth / W, root.clientHeight / H);
+    root.style.setProperty('--s', String(s > 0 ? s : 1));
+  }
+  function go(i) {
+    cur = Math.max(0, Math.min(n - 1, i));
+    if (scrollMode()) { slides[cur].scrollIntoView(); }
+    slides.forEach(function (s, k) {
+      var on = k === cur;
+      s.classList.toggle('on', on);
+      if (on) s.removeAttribute('inert'); else s.setAttribute('inert', '');
+    });
+    try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) {}
+  }
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if ((k === ' ' && e.shiftKey) || k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp') { e.preventDefault(); go(cur - 1); }
+    else if (k === ' ' || k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown') { e.preventDefault(); go(cur + 1); }
+    else if (k === 'Home') { e.preventDefault(); go(0); }
+    else if (k === 'End') { e.preventDefault(); go(n - 1); }
+    else if (k === 'f' || k === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (root.requestFullscreen) root.requestFullscreen();
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (e.button !== 0 || scrollMode() || String(document.getSelection() || '') !== '') return;
+    go(cur + (e.clientX < root.clientWidth / 2 ? -1 : 1));
+  });
+  var tx = 0, ty = 0, tt = 0;
+  document.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) { tt = 0; return; }
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY; tt = Date.now();
+  }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (scrollMode() || e.changedTouches.length !== 1) return;
+    var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+    if (Date.now() - tt > 700 || Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    go(cur + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+  var wheelLock = false;
+  window.addEventListener('wheel', function (e) {
+    if (e.ctrlKey || scrollMode() || Math.abs(e.deltaY) < 30) return;
+    e.preventDefault();
+    if (wheelLock) return;
+    wheelLock = true; setTimeout(function () { wheelLock = false; }, 450);
+    go(cur + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: false });
+  window.addEventListener('hashchange', function () {
+    var m = /^#(\d+)$/.exec(location.hash);
+    if (m && +m[1] - 1 !== cur) go(+m[1] - 1);
+  });
+
+  fit();
+  var m = /^#(\d+)$/.exec(location.hash);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

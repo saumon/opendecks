@@ -51,6 +51,7 @@ Slides are usually trapped in proprietary formats and tools. OpenDecks takes the
 | [Spec-driven dev, compared](https://saumon.github.io/opendecks/decks/sdd-tools-compared.html) | BMAD, OpenSpec, GitHub Spec Kit and the rest (Kiro, GSD, Task Master, Tessl): workflows, pros and cons, and measured token costs. |
 | [tmux — the comeback](https://saumon.github.io/opendecks/decks/tmux-the-comeback.html) | Why tmux matters again for remote, agent-driven development. |
 | [vi, vim, neovim — and vis](https://saumon.github.io/opendecks/decks/vi-vim-neovim.html) | From ed to Neovim: the history of modal editing, how vi, Vim and Neovim differ, and vis as a modern alternative. |
+| [Tailscale for developers](https://saumon.github.io/opendecks/decks/tailscale.html) | A WireGuard mesh VPN for developers: how it works (control plane, NAT traversal, DERP), grants and SSH, serve/funnel/tsnet, subnet routers, pricing, and Headscale as an alternative. |
 
 The [live site](https://saumon.github.io/opendecks/) always lists the current decks.
 
@@ -83,6 +84,7 @@ Because the index is rebuilt on each deploy, it can never drift out of sync with
 │   ├── gitkraken-alternatives.html
 │   ├── lean-tech.html
 │   ├── sdd-tools-compared.html
+│   ├── tailscale.html
 │   ├── tmux-the-comeback.html
 │   └── vi-vim-neovim.html
 ├── scripts/
