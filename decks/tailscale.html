@@ -130,14 +130,15 @@ html.scroll .frame .slide{position:relative;opacity:1;visibility:visible;transfo
   <h2 class="h2">Control plane, data plane.</h2>
   <div class="row">
     <div class="card" style="flex:1.1;justify-content:center">
-<pre class="ts" style="line-height:1.18">    ┌─────────────────────────────┐
-    │     <span class="g b">coordination server</span>     │
-    │   keys · policy · netmap    │
-    └────<span class="a">▲</span>───────────────────<span class="a">▲</span>────┘
-         │                   │
-     ┌───┴────┐         ┌────┴───┐
-     │ laptop │<span class="g b">◄═══════►</span>│  box   │
-     └────────┘         └────────┘
+<pre class="ts">    +-----------------------------+
+    |     <span class="g">coordination server</span>     |
+    |   keys, policy, netmap      |
+    +-----------------------------+
+         <span class="a">^</span>                   <span class="a">^</span>
+         |                   |
+     +---+----+         +----+---+
+     | laptop |<span class="g">&lt;=======&gt;</span>|  box   |
+     +--------+         +--------+
           <span class="muted"># WireGuard tunnel</span></pre>
     </div>
     <div class="col" style="flex:.9">
