@@ -4,12 +4,14 @@ OpenDecks : des decks HTML autonomes dans `decks/`, publiés sur GitHub Pages. `
 
 ## Créer un nouveau deck
 
+Le skill `/saumon-new-deck` automatise tout ce flux (cadrage, recherche web, plan, écriture, vérifications, index, README, commit). Les règles ci-dessous restent la référence.
+
 1. **Fichier** : un seul `.html` autonome, `decks/<nom-en-kebab-case>.html`, sans espaces ni accents. Seuls les fichiers à la racine de `decks/` sont indexés.
 2. **Métadonnées** :
    - Un `<title>` court, qui devient le titre de la carte sur l'accueil.
    - Une `<meta name="description">` d'une ligne, qui devient le sous-titre.
 3. **Tout en ligne** : CSS, JS et images (`data:` URI). Seule exception : la police Google Fonts. Pas d'autre ressource externe. La CSP en tête du deck doit rester compatible.
-4. **Style** : toujours utiliser le thème « geek terminal » des decks existants, sans exception ni variante. `decks/lean-tech.html` est la base la plus propre à copier.
+4. **Style** : toujours utiliser le thème « geek terminal » des decks existants, sans exception ni variante. Partir de `.claude/skills/saumon-new-deck/template.html` (squelette à jour, en anglais), pas d'un deck existant : `lean-tech.html` est en français.
    - Canevas 1920×1080 mis à l'échelle.
    - Police JetBrains Mono.
    - Couleurs : fonds `#0e1116` / `#11161d` / `#0a1a12`, texte `#d8dee4`, vert `#3ddc84`, ambre `#f5a524`, gris `#7d8590`, rouge `#f85149`.
