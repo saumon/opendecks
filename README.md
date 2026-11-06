@@ -89,6 +89,11 @@ Because the index is rebuilt on each deploy, it can never drift out of sync with
 │   └── vi-vim-neovim.html
 ├── scripts/
 │   └── build-index.mjs     # generates index.html (Node, no dependencies)
+├── .claude/skills/
+│   └── saumon-new-deck/    # Claude Code skill that creates a deck from a topic
+│       ├── SKILL.md
+│       ├── template.html   # deck skeleton: theme, navigation, slide patterns
+│       └── check-deck.cjs  # headless-browser checks (overflow, keyboard, mobile, print)
 ├── .github/workflows/
 │   └── pages.yml           # build + deploy to GitHub Pages
 ├── index.html              # generated entry point (do not edit by hand)
@@ -97,6 +102,27 @@ Because the index is rebuilt on each deploy, it can never drift out of sync with
 ```
 
 ## Adding a deck
+
+### With Claude Code
+
+The repository ships a [Claude Code](https://claude.com/claude-code) skill, `saumon-new-deck`, that creates a deck from a topic. In a Claude Code session opened at the repository root:
+
+```text
+/saumon-new-deck Tailscale
+```
+
+The skill:
+
+1. asks about the topic, the audience, the number of slides (21 by default) and the language (English by default);
+2. researches the topic on the web, cross-checks figures and dates, and keeps the sources;
+3. proposes themes, then a slide-by-slide outline, and waits for your approval;
+4. writes `decks/<name>.html` from [`template.html`](.claude/skills/saumon-new-deck/template.html), with the project's terminal theme and navigation;
+5. checks the result in a headless browser with [`check-deck.cjs`](.claude/skills/saumon-new-deck/check-deck.cjs) (overflow, keyboard navigation, mobile view, print, no external resources);
+6. regenerates `index.html`, adds the deck to this README and commits on `dev`. It never pushes unless you ask.
+
+The headless checks need the Playwright package and a Chromium build (`npx playwright install chromium`). The script looks for Playwright in the project, then in the npx cache.
+
+### By hand
 
 1. Put your deck in `decks/`, using a URL-friendly name (lowercase, hyphens, no spaces): `decks/my-talk.html`.
 2. Make sure it has a meaningful `<title>`. It becomes the card title on the home page.
